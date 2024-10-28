@@ -1,7 +1,7 @@
 syntax = "proto3";
 package cz.cvut.fel.dsva.grpc;
 option java_multiple_files = true;
-import "google/protobuf/empty.proto";
+import public "google/protobuf/empty.proto";
 service JuliaSetCalculator {
   // Sends a greeting
   rpc calculate (stream CalculationRequest) returns (stream CalculationResult) {}
