@@ -1,4 +1,4 @@
-package cz.cvut.fel.dsva.cz.cvut.fel.dsva
+package cz.cvut.fel.dsva
 
 fun main() {
 
