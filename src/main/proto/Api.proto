@@ -24,11 +24,12 @@ message ImageProperties {
 message JuliaSetProperties {
   ComplexNumber offset = 1;
   double escapeRadius = 2;
+  uint32 maxIterations = 3;
 }
 
 message ComplexNumber{
   double real = 1;
-  double imagine = 2;
+  double imaginary = 2;
 }
 
 message CalculationResult{
