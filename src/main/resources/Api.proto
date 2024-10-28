@@ -1,0 +1,38 @@
+syntax = "proto3";
+package cz.cvut.fel.dsva.grpc;
+option java_multiple_files = true;
+import "google/protobuf/empty.proto";
+service JuliaSetCalculator {
+  // Sends a greeting
+  rpc calculate (stream CalculationRequest) returns (stream CalculationResult) {}
+  // Sends another greeting
+  rpc requestNewWork (stream CalculationResult) returns (stream CalculationRequest) {}
+}
+
+message CalculationRequest {
+  string calculationId = 1;
+  ImageProperties imageProperties = 2;
+  JuliaSetProperties juliaSetProperties = 3;
+}
+
+message ImageProperties {
+  uint32 id = 1;
+  uint32 height = 2;
+  uint32 width = 3;
+}
+
+message JuliaSetProperties {
+  ComplexNumber offset = 1;
+  double escapeRadius = 2;
+}
+
+message ComplexNumber{
+  double real = 1;
+  double imagine = 2;
+}
+
+message CalculationResult{
+  string calculationId = 1;
+  ImageProperties imageProperties = 2;
+  bytes calculatedPixels = 3;
+}

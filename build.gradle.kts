@@ -10,6 +10,7 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.scrimage)
     testImplementation(kotlin("test"))
 }
 
