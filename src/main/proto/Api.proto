@@ -23,8 +23,10 @@ message ImageProperties {
 
 message JuliaSetProperties {
   ComplexNumber offset = 1;
-  double escapeRadius = 2;
-  uint32 maxIterations = 3;
+  ComplexNumber upperCorner = 2;
+  ComplexNumber lowerCorner = 3;
+  double escapeRadius = 4;
+  uint32 maxIterations = 5;
 }
 
 message ComplexNumber{
@@ -35,5 +37,11 @@ message ComplexNumber{
 message CalculationResult{
   string calculationId = 1;
   ImageProperties imageProperties = 2;
-  bytes calculatedPixels = 3;
+  repeated Pixel pixels = 3;
+}
+
+message Pixel{
+  uint32 x = 1;
+  uint32 y = 2;
+  uint32 argb = 3;
 }
