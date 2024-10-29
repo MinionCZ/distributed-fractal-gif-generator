@@ -1,9 +1,12 @@
 package cz.cvut.fel.dsva.service
 
+import com.google.protobuf.Empty
+import com.google.protobuf.empty
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJob
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
+import cz.cvut.fel.dsva.grpc.BatchCalculationResult
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResponseStatus
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
 import cz.cvut.fel.dsva.grpc.WorkStation
@@ -41,8 +44,17 @@ class JuliaSetServiceImpl(
                 .createRemoteJob(thisWorkStation.batchSize, workStation)
                 .toBatchCalculationRequest()
         } catch (e: IllegalStateException) {
-            EMPTY_BATCH_CALCULATION_REQUEST
+            BatchCalculationRequest.getDefaultInstance()
         }
+    }
+
+    override fun handleDoneWork(calculationResult: BatchCalculationResult): Empty {
+        try {
+            systemJobStore.getSystemJob().addCalculationResults(calculationResult.resultsList, calculationResult.worker)
+        } catch (e: IllegalStateException) {
+            //TODO log
+        }
+        return Empty.getDefaultInstance()
     }
 
 
@@ -63,15 +75,12 @@ class JuliaSetServiceImpl(
             }
         }
     }
-
-    companion object {
-        private val EMPTY_BATCH_CALCULATION_REQUEST = BatchCalculationRequest.newBuilder().build()
-    }
 }
 
 
 interface JuliaSetService {
     suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult
     fun handleNewWorkRequest(workStation: WorkStation): BatchCalculationRequest
+    fun handleDoneWork(calculationResult: BatchCalculationResult): Empty
 
 }

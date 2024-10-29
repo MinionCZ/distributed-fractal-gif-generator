@@ -44,6 +44,18 @@ class SystemJob(
         }
     }
 
+
+    fun addCalculationResults(calculationResults: List<CalculationResult>, workStation: WorkStation) {
+        synchronized(this) {
+            val removed = remoteTasks.removeIf {
+                it.worker == workStation
+            }
+            check(removed) {
+                "Unknown results from worker"
+            }
+            calculatedImages.addAll(calculationResults)
+        }
+    }
 }
 
 interface SystemJobStore {

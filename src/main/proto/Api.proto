@@ -20,6 +20,7 @@ message RequestCalculationRequestResult{
 
 message BatchCalculationResult{
   repeated CalculationResult results = 1;
+  WorkStation worker = 2;
 }
 message BatchCalculationRequest{
   repeated CalculationRequest requests = 1;

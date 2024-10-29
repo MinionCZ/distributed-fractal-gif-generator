@@ -19,6 +19,6 @@ class JuliaSetApiHandler(private val juliaSetService: JuliaSetService) :
     }
 
     override suspend fun submitRequestedWork(request: BatchCalculationResult): Empty {
-        return super.submitRequestedWork(request)
+        return juliaSetService.handleDoneWork(request)
     }
 }
