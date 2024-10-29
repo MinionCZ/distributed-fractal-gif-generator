@@ -1,7 +1,6 @@
 package cz.cvut.fel.dsva
 
 import com.sksamuel.scrimage.ImmutableImage
-import com.sksamuel.scrimage.color.RGBColor
 import com.sksamuel.scrimage.nio.PngWriter
 import cz.cvut.fel.dsva.grpc.ComplexNumber
 import cz.cvut.fel.dsva.grpc.ImageProperties
