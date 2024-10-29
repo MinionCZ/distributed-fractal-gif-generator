@@ -1,35 +1,47 @@
 package cz.cvut.fel.dsva.service
 
+import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJob
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
-import cz.cvut.fel.dsva.datastructure.system.WorkStation
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResponseStatus
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
+import cz.cvut.fel.dsva.grpc.WorkStation
 import cz.cvut.fel.dsva.grpc.calculationResult
 import cz.cvut.fel.dsva.grpc.requestCalculationRequestResult
 import cz.cvut.fel.dsva.images.ImagesGenerator
-import cz.cvut.fel.dsva.toTasks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
-class JuliaSetServiceImpl(private val systemJobStore: SystemJobStore, private val imagesGenerator: ImagesGenerator) :
-    JuliaSetService {
+class JuliaSetServiceImpl(
+    private val systemJobStore: SystemJobStore,
+    private val imagesGenerator: ImagesGenerator,
+    private val thisWorkStation: WorkStationConfig,
+) : JuliaSetService {
     override suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult {
         return if (systemJobStore.isSystemJobPresent()) {
             requestCalculationRequestResult {
                 status = RequestCalculationRequestResponseStatus.ALREADY_IN_COMPUTATION
             }
         } else {
-            val ip = request.requester.ipList.map { it.toByte() }.toByteArray()
-            val requester = WorkStation(ip, request.requester.port)
-            val newSystemJob = SystemJob(requester, request.requestsList.toTasks())
+            val newSystemJob = SystemJob(request.requester, request.requestsList)
             systemJobStore.persistNewSystemJob(systemJob = newSystemJob)
             runCalculationOnBackground()
             requestCalculationRequestResult {
                 status = RequestCalculationRequestResponseStatus.OK
             }
+        }
+    }
+
+    override fun handleNewWorkRequest(workStation: WorkStation): BatchCalculationRequest {
+        return try {
+            systemJobStore
+                .getSystemJob()
+                .createRemoteJob(thisWorkStation.batchSize, workStation)
+                .toBatchCalculationRequest()
+        } catch (e: IllegalStateException) {
+            EMPTY_BATCH_CALCULATION_REQUEST
         }
     }
 
@@ -47,15 +59,19 @@ class JuliaSetServiceImpl(private val systemJobStore: SystemJobStore, private va
                         pixels.addAll(calculatedImage.toList())
                     })
                 }
-            //TODO check if remote computation is done as well and return results
+                //TODO check if remote computation is done as well and return results
             }
         }
+    }
 
+    companion object {
+        private val EMPTY_BATCH_CALCULATION_REQUEST = BatchCalculationRequest.newBuilder().build()
     }
 }
 
 
 interface JuliaSetService {
     suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult
+    fun handleNewWorkRequest(workStation: WorkStation): BatchCalculationRequest
 
 }

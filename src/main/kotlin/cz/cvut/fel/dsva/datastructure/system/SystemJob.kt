@@ -1,25 +1,21 @@
 package cz.cvut.fel.dsva.datastructure.system
 
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
-import cz.cvut.fel.dsva.datastructure.Task
+import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationResult
+import cz.cvut.fel.dsva.grpc.WorkStation
+import java.time.LocalDateTime
 import java.util.LinkedList
 
 class SystemJob(
     val workRequester: WorkStation,
-    tasks: List<Task>,
+    tasks: List<CalculationRequest>,
 ) {
-    private val remoteTasks: MutableList<RemoteTaskBatch> = ArrayList()
+    private val remoteTasks: MutableList<RemoteTaskBatch> = LinkedList()
     private val tasks = LinkedList(tasks)
     private val calculatedImages = LinkedList<CalculationResult>()
 
-    fun removeTask(task: Task) {
-        synchronized(this) {
-            tasks.remove(task)
-        }
-    }
-
-    fun popFirstTask(): Task? {
+    fun popFirstTask(): CalculationRequest? {
         return synchronized(this) {
             if (tasks.isEmpty()) {
                 null
@@ -35,6 +31,18 @@ class SystemJob(
         }
     }
 
+    fun createRemoteJob(numberOfTasks: Int, worker: WorkStation): RemoteTaskBatch {
+        return synchronized(this) {
+            check(numberOfTasks <= tasks.size) {
+                "Not enough tasks to create remote job"
+            }
+            val remoteTasks = LinkedList(tasks.subList(tasks.size - numberOfTasks, tasks.size))
+            tasks.removeAll(remoteTasks)
+            val remoteTaskBatch = RemoteTaskBatch(remoteTasks, LocalDateTime.now(), worker)
+            this.remoteTasks.add(remoteTaskBatch)
+            remoteTaskBatch
+        }
+    }
 
 }
 
