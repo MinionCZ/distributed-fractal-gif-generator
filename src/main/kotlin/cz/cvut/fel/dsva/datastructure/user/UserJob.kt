@@ -1,27 +1,21 @@
-package cz.cvut.fel.dsva.datastructure
+package cz.cvut.fel.dsva.datastructure.user
 
+import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
+import cz.cvut.fel.dsva.datastructure.Task
 import cz.cvut.fel.dsva.grpc.Pixel
-import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 
-data class Job(
+data class UserJob(
     val width: Int,
     val height: Int,
     val escapeRadius: Double,
     val remainingTasks: MutableList<Task>,
     val resultName: String,
 ) {
-    val id: UUID = UUID.randomUUID()
     val calculatedImages: MutableList<CalculatedImage> = CopyOnWriteArrayList()
+    val remoteTasks: Collection<RemoteTaskBatch> = CopyOnWriteArrayList()
 }
 
-data class Task(
-    val id: Int,
-    val lowerCorner: ComplexNumber,
-    val upperCorner: ComplexNumber,
-    val offset: ComplexNumber,
-    val numberOfIterations: Int
-)
 
 data class ComplexNumber(val real: Double, val imaginary: Double)
 

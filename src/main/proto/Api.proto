@@ -8,7 +8,7 @@ service JuliaSetCalculator {
   rpc submitRequestedWork(BatchCalculationResult) returns (google.protobuf.Empty) {}
 }
 message BatchCalculationResult{
-  repeated CalculationResult requests = 1;
+  repeated CalculationResult results = 1;
 }
 message BatchCalculationRequest{
   repeated CalculationRequest requests = 1;
