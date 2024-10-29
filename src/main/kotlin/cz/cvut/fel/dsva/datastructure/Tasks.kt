@@ -2,15 +2,14 @@ package cz.cvut.fel.dsva.datastructure
 
 import cz.cvut.fel.dsva.datastructure.system.WorkStation
 import cz.cvut.fel.dsva.datastructure.user.ComplexNumber
+import cz.cvut.fel.dsva.grpc.ImageProperties
+import cz.cvut.fel.dsva.grpc.JuliaSetProperties
 import java.time.LocalDateTime
 
 
-data class Task(
-    val id: Int,
-    val lowerCorner: ComplexNumber,
-    val upperCorner: ComplexNumber,
-    val offset: ComplexNumber,
-    val numberOfIterations: Int
+class Task(
+    val imageProperties: ImageProperties,
+    val juliaSetProperties: JuliaSetProperties,
 )
 
 data class RemoteTaskBatch(

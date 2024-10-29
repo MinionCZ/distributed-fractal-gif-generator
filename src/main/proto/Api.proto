@@ -3,21 +3,32 @@ package cz.cvut.fel.dsva.grpc;
 option java_multiple_files = true;
 import public "google/protobuf/empty.proto";
 service JuliaSetCalculator {
-  rpc calculate (BatchCalculationRequest) returns (BatchCalculationResult) {}
+  rpc requestCalculation (BatchCalculationRequest) returns (RequestCalculationRequestResult) {}
   rpc requestNewWork (google.protobuf.Empty) returns (BatchCalculationRequest) {}
   rpc submitRequestedWork(BatchCalculationResult) returns (google.protobuf.Empty) {}
 }
+
+enum RequestCalculationRequestResponseStatus{
+  OK = 0;
+  ALREADY_IN_COMPUTATION = 1;
+}
+
+message RequestCalculationRequestResult{
+  RequestCalculationRequestResponseStatus status = 1;
+}
+
+
 message BatchCalculationResult{
   repeated CalculationResult results = 1;
 }
 message BatchCalculationRequest{
   repeated CalculationRequest requests = 1;
+  WorkStation requester = 2;
 }
 
 message CalculationRequest {
-  string calculationId = 1;
-  ImageProperties imageProperties = 2;
-  JuliaSetProperties juliaSetProperties = 3;
+  ImageProperties imageProperties = 1;
+  JuliaSetProperties juliaSetProperties = 2;
 }
 
 message ImageProperties {
@@ -40,13 +51,17 @@ message ComplexNumber{
 }
 
 message CalculationResult{
-  string calculationId = 1;
-  ImageProperties imageProperties = 2;
-  repeated Pixel pixels = 3;
+  ImageProperties imageProperties = 1;
+  repeated Pixel pixels = 2;
 }
 
 message Pixel{
   uint32 x = 1;
   uint32 y = 2;
   uint32 argb = 3;
+}
+
+message WorkStation{
+  repeated int32 ip = 1;
+  int32 port = 2;
 }
