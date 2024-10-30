@@ -2,7 +2,7 @@ package cz.cvut.fel.dsva.service
 
 import com.google.protobuf.Empty
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.datastructure.system.SystemJob
+import cz.cvut.fel.dsva.datastructure.system.Job
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.BatchCalculationResult
@@ -27,8 +27,8 @@ class JuliaSetServiceImpl(
                 status = RequestCalculationRequestResponseStatus.ALREADY_IN_COMPUTATION
             }
         } else {
-            val newSystemJob = SystemJob(request.requester, request.requestsList)
-            systemJobStore.persistNewSystemJob(systemJob = newSystemJob)
+            val newJob = Job(request.requester, request.requestsList)
+            systemJobStore.persistNewSystemJob(job = newJob)
             runCalculationOnBackground()
             requestCalculationRequestResult {
                 status = RequestCalculationRequestResponseStatus.OK

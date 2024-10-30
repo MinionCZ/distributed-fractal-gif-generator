@@ -4,6 +4,7 @@ val protobufVersion: String by settings
 val grpcVersion: String by settings
 val grpcKotlinStubVersion: String by settings
 val coroutinesVersion: String by settings
+val jacksonVersion: String by settings
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
 }
@@ -21,6 +22,7 @@ dependencyResolutionManagement {
             library("grpcKotlin", "io.grpc:grpc-kotlin-stub:$grpcKotlinStubVersion")
             library("grpcKotlinGen", "io.grpc:protoc-gen-grpc-kotlin:$grpcKotlinStubVersion")
             library("coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+            library("jackson","com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
         }
     }
 }
