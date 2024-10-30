@@ -12,7 +12,7 @@ interface ImagesGenerator {
     fun generateJuliaSetImage(imageProperties: ImageProperties, juliaSetProperties: JuliaSetProperties): Array<Pixel>
 }
 
-object ImagesGeneratorImpl : ImagesGenerator {
+class ImagesGeneratorImpl : ImagesGenerator {
     override fun generateJuliaSetImage(
         imageProperties: ImageProperties,
         juliaSetProperties: JuliaSetProperties
