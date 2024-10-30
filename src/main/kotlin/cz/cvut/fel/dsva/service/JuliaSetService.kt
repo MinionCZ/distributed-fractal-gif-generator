@@ -1,7 +1,6 @@
 package cz.cvut.fel.dsva.service
 
 import com.google.protobuf.Empty
-import com.google.protobuf.empty
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJob
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
