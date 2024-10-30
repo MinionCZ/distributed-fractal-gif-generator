@@ -2,7 +2,10 @@ package cz.cvut.fel.dsva.input
 
 import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.databind.ObjectMapper
+import cz.cvut.fel.dsva.datastructure.WorkStationConfig
+import cz.cvut.fel.dsva.datastructure.system.Job
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
+import cz.cvut.fel.dsva.grpc.WorkStation
 import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
@@ -13,7 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
-class UserInputHandler(val systemJobStore: SystemJobStore, private val objectMapper: ObjectMapper) {
+class UserInputHandler(private val systemJobStore: SystemJobStore, private val currentWorkStationConfig: WorkStationConfig,private val objectMapper: ObjectMapper) {
     suspend fun startInputHandler() {
         coroutineScope {
             launch(Dispatchers.IO) {
@@ -32,6 +35,8 @@ class UserInputHandler(val systemJobStore: SystemJobStore, private val objectMap
         try {
             val parsedInput = parseUserInput(line)
             parsedInput.validate()
+            validateWorkstationState()
+            // todo create new job
         } catch (e: IllegalStateException) {
             System.err.println(e.message)
         } catch (e: IOException) {
@@ -50,6 +55,12 @@ class UserInputHandler(val systemJobStore: SystemJobStore, private val objectMap
         }
         val content = file.readText()
         return objectMapper.readValue(content, UserInputHolder::class.java)
+    }
+
+    private fun validateWorkstationState() {
+        if (systemJobStore.isSystemJobPresent()) {
+            error("System is already calculating, please wait until calculation is done")
+        }
     }
 
 }
