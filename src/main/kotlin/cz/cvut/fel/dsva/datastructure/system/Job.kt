@@ -77,7 +77,12 @@ class SystemJobStoreImpl : SystemJobStore {
     }
 
     override fun persistNewSystemJob(job: Job) {
-        synchronized(this) { this.job = job }
+        synchronized(this) {
+            if (this.job != null) {
+                error("System job is already persisted")
+            }
+            this.job = job
+        }
     }
 
     override fun removeSystemJob() {

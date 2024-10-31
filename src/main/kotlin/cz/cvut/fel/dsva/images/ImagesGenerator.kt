@@ -34,11 +34,11 @@ class ImagesGeneratorImpl : ImagesGenerator {
     ): Pixel {
         val escapeRadius = juliaSetProperties.escapeRadius
         val startingXOffset =
-            ((juliaSetProperties.upperCorner.real - juliaSetProperties.lowerCorner.real) / imageProperties.width) * x
+            ((juliaSetProperties.topRightCorner.real - juliaSetProperties.bottomLeftCorner.real) / imageProperties.width) * x
         val startingYOffset =
-            ((juliaSetProperties.upperCorner.imaginary - juliaSetProperties.lowerCorner.imaginary) / imageProperties.height) * y
-        var xValue: Double = juliaSetProperties.lowerCorner.real + startingXOffset
-        var yValue: Double = juliaSetProperties.lowerCorner.imaginary + startingYOffset
+            ((juliaSetProperties.topRightCorner.imaginary - juliaSetProperties.bottomLeftCorner.imaginary) / imageProperties.height) * y
+        var xValue: Double = juliaSetProperties.bottomLeftCorner.real + startingXOffset
+        var yValue: Double = juliaSetProperties.bottomLeftCorner.imaginary + startingYOffset
         val pictureY = imageProperties.height - y - 1
         for (i in 0..<juliaSetProperties.maxIterations) {
             val xTemp = xValue * xValue - yValue * yValue

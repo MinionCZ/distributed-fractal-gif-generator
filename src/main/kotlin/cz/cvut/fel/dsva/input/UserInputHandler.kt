@@ -5,18 +5,27 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.Job
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
-import cz.cvut.fel.dsva.grpc.WorkStation
+import cz.cvut.fel.dsva.grpc.CalculationRequest
+import cz.cvut.fel.dsva.grpc.calculationRequest
+import cz.cvut.fel.dsva.grpc.complexNumber
+import cz.cvut.fel.dsva.grpc.imageProperties
+import cz.cvut.fel.dsva.grpc.juliaSetProperties
 import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.time.Duration
+import java.util.LinkedList
 import kotlin.math.pow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
-class UserInputHandler(private val systemJobStore: SystemJobStore, private val currentWorkStationConfig: WorkStationConfig,private val objectMapper: ObjectMapper) {
+class UserInputHandler(
+    private val systemJobStore: SystemJobStore,
+    private val currentWorkStationConfig: WorkStationConfig,
+    private val objectMapper: ObjectMapper
+) {
     suspend fun startInputHandler() {
         coroutineScope {
             launch(Dispatchers.IO) {
@@ -36,7 +45,8 @@ class UserInputHandler(private val systemJobStore: SystemJobStore, private val c
             val parsedInput = parseUserInput(line)
             parsedInput.validate()
             validateWorkstationState()
-            // todo create new job
+            enqueueNewUserJob(parsedInput)
+            // todo start calculation
         } catch (e: IllegalStateException) {
             System.err.println(e.message)
         } catch (e: IOException) {
@@ -63,11 +73,69 @@ class UserInputHandler(private val systemJobStore: SystemJobStore, private val c
         }
     }
 
+    private fun enqueueNewUserJob(userInputHolder: UserInputHolder) {
+        val newJob = Job(
+            workRequester = this.currentWorkStationConfig.toWorkStation(),
+            createTasksFromUserInput(userInputHolder)
+        )
+        systemJobStore.persistNewSystemJob(newJob)
+    }
+
+    private fun createTasksFromUserInput(userInputHolder: UserInputHolder): List<CalculationRequest> {
+        val offsetStep =
+            (userInputHolder.juliaSetProperties.endingOffset - userInputHolder.juliaSetProperties.startingOffset).divByScalar(
+                userInputHolder.gifProperties.numberOfFrames.toDouble()
+            )
+        val iterationStep =
+            (userInputHolder.juliaSetProperties.endingNumberOfIterations - userInputHolder.juliaSetProperties.startingNumberOfIterations) / userInputHolder.gifProperties.numberOfFrames
+
+        val tasks = LinkedList<CalculationRequest>()
+        var calculationOffset = userInputHolder.juliaSetProperties.startingOffset
+        var iteration = userInputHolder.juliaSetProperties.startingNumberOfIterations
+        val topRightCornerInProtobufFormat = userInputHolder.juliaSetProperties.topRightCorner.toProtobufFormat()
+        val bottomLeftCornerInProtobufFormat = userInputHolder.juliaSetProperties.topRightCorner.toProtobufFormat()
+        for (i in 0..<userInputHolder.gifProperties.numberOfFrames) {
+            val task = calculationRequest {
+                imageProperties = userInputHolder.imageProperties.toProtobufFormat(i)
+                juliaSetProperties = juliaSetProperties {
+                    offset = calculationOffset.toProtobufFormat()
+                    topRightCorner = topRightCornerInProtobufFormat
+                    bottomLeftCorner = bottomLeftCornerInProtobufFormat
+                    escapeRadius = userInputHolder.juliaSetProperties.escapeRadius
+                    maxIterations = iteration
+                }
+            }
+            calculationOffset += offsetStep
+            iteration += iterationStep
+            tasks.add(task)
+        }
+        return tasks
+    }
 }
 
 data class ComplexNumber(val real: Double, val imaginary: Double) {
     val size: Double
         get() = (real.pow(2) + imaginary.pow(2)).pow(0.5)
+
+
+    operator fun minus(other: ComplexNumber): ComplexNumber {
+        val real = this.real - other.real
+        val imaginary = this.imaginary - other.imaginary
+        return ComplexNumber(real, imaginary)
+    }
+
+    fun divByScalar(scalar: Double): ComplexNumber {
+        return ComplexNumber(real / scalar, imaginary / scalar)
+    }
+
+    operator fun plus(other: ComplexNumber): ComplexNumber {
+        return ComplexNumber(real + other.real, imaginary + other.imaginary)
+    }
+
+    fun toProtobufFormat(): cz.cvut.fel.dsva.grpc.ComplexNumber = complexNumber {
+        imaginary = this.imaginary
+        real = this.real
+    }
 }
 
 
@@ -85,6 +153,12 @@ data class ImageProperties(
         if (height > MAX_HEIGHT) {
             throw IllegalArgumentException("Height ($height) is higher than max possible value ($MAX_HEIGHT)")
         }
+    }
+
+    fun toProtobufFormat(frameId: Int): cz.cvut.fel.dsva.grpc.ImageProperties = imageProperties {
+        id = frameId
+        width = this.width
+        height = this.height
     }
 
     private companion object {
