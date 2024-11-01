@@ -17,7 +17,6 @@ data class UserJob(
 }
 
 
-data class ComplexNumber(val real: Double, val imaginary: Double)
 
 data class CalculatedImage(
     val id: Int,

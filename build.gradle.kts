@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.grpc)
     implementation(libs.grpcKotlin)
     implementation(libs.coroutines)
+    implementation(libs.jackson)
     testImplementation(kotlin("test"))
 }
 

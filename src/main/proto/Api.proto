@@ -40,8 +40,8 @@ message ImageProperties {
 
 message JuliaSetProperties {
   ComplexNumber offset = 1;
-  ComplexNumber upperCorner = 2;
-  ComplexNumber lowerCorner = 3;
+  ComplexNumber topRightCorner = 2;
+  ComplexNumber bottomLeftCorner = 3;
   double escapeRadius = 4;
   uint32 maxIterations = 5;
 }

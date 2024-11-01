@@ -7,7 +7,7 @@ import cz.cvut.fel.dsva.grpc.WorkStation
 import java.time.LocalDateTime
 import java.util.LinkedList
 
-class SystemJob(
+class Job(
     val workRequester: WorkStation,
     tasks: List<CalculationRequest>,
 ) {
@@ -60,28 +60,33 @@ class SystemJob(
 
 interface SystemJobStore {
     fun isSystemJobPresent(): Boolean
-    fun getSystemJob(): SystemJob
-    fun persistNewSystemJob(systemJob: SystemJob)
+    fun getSystemJob(): Job
+    fun persistNewSystemJob(job: Job)
     fun removeSystemJob()
 }
 
 class SystemJobStoreImpl : SystemJobStore {
-    private var systemJob: SystemJob? = null
+    private var job: Job? = null
 
     override fun isSystemJobPresent(): Boolean {
-        return synchronized(this) { systemJob != null }
+        return synchronized(this) { job != null }
     }
 
-    override fun getSystemJob(): SystemJob {
-        return synchronized(this) { systemJob ?: error("System job is null") }
+    override fun getSystemJob(): Job {
+        return synchronized(this) { job ?: error("System job is null") }
     }
 
-    override fun persistNewSystemJob(systemJob: SystemJob) {
-        synchronized(this) { this.systemJob = systemJob }
+    override fun persistNewSystemJob(job: Job) {
+        synchronized(this) {
+            if (this.job != null) {
+                error("System job is already persisted")
+            }
+            this.job = job
+        }
     }
 
     override fun removeSystemJob() {
-        synchronized(this) { systemJob = null }
+        synchronized(this) { job = null }
     }
 }
 
