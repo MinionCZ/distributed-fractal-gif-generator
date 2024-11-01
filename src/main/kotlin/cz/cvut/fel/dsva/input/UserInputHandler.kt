@@ -46,6 +46,7 @@ class UserInputHandler(
             parsedInput.validate()
             validateWorkstationState()
             enqueueNewUserJob(parsedInput)
+            println("New job has started")
             // todo start calculation
         } catch (e: IllegalStateException) {
             System.err.println(e.message)
