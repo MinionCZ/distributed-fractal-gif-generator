@@ -18,6 +18,8 @@ dependencies {
     implementation(libs.grpcKotlin)
     implementation(libs.coroutines)
     implementation(libs.jackson)
+    implementation(libs.jacksonKotlin)
+    implementation(libs.jacksonDateTime)
     testImplementation(kotlin("test"))
 }
 
