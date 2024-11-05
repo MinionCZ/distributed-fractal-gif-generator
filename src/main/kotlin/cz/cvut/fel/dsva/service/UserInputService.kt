@@ -5,8 +5,10 @@ import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
 import cz.cvut.fel.dsva.grpc.calculationResult
 import cz.cvut.fel.dsva.images.ImagesGenerator
+import java.time.Duration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 interface UserInputService {
@@ -25,6 +27,7 @@ class UserInputServiceImpl(
                 val remoteJobs = prepareRemoteJobs()
                 sendRemoteJobs(remoteJobs)
                 calculateTasks()
+                awaitCalculationFinish()
             }
         }
 
@@ -65,5 +68,31 @@ class UserInputServiceImpl(
                 pixels.addAll(calculatedPixels.toList())
             })
         }
+    }
+
+    private suspend fun awaitCalculationFinish() {
+        do {
+            val status = systemJobStore.getSystemJob().checkIfWorkIsDone()
+            if (!status.remoteTasksCalculated) {
+                val timeOutedJobs =
+                    systemJobStore.getSystemJob().getTimeOutedJobs(workStationConfig.maxCalculationDuration)
+                systemJobStore.getSystemJob().deleteRemoteJobs(timeOutedJobs)
+            }
+            if (!status.tasksCalculated) {
+                coroutineScope {
+                    launch(Dispatchers.IO) {
+                        calculateTasks()
+                    }
+                }
+            }
+            if (!status.tasksCalculated || !status.remoteTasksCalculated) {
+                delay(DELAY.toMillis())
+            }
+        } while (!status.tasksCalculated || !status.remoteTasksCalculated)
+
+    }
+
+    companion object {
+        private val DELAY = Duration.ofSeconds(1)
     }
 }

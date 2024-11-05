@@ -5,6 +5,7 @@ import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationResult
 import cz.cvut.fel.dsva.grpc.WorkStation
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.LinkedList
 
@@ -64,6 +65,33 @@ class Job(
             tasks.addAll(remoteTaskBatch.tasks)
         }
     }
+
+    fun deleteRemoteJobs(remoteTaskBatches: List<RemoteTaskBatch>) {
+        synchronized(this) {
+            for (remoteTaskBatch in remoteTaskBatches) {
+                if (remoteTasks.remove(remoteTaskBatch)) {
+                    tasks.addAll(remoteTaskBatch.tasks)
+                }
+            }
+        }
+    }
+
+    fun checkIfWorkIsDone(): ComputationStatus {
+        synchronized(this) {
+            val tasksCalculated = this.tasks.isEmpty()
+            val remoteTasksCalculated = tasks.isEmpty()
+            return ComputationStatus(tasksCalculated, remoteTasksCalculated)
+        }
+    }
+
+    fun getTimeOutedJobs(timeout: Duration): List<RemoteTaskBatch> {
+        synchronized(this) {
+            val cutOffTime = LocalDateTime.now()
+            return this.remoteTasks.filter { it.startTimestamp.plus(timeout) <= cutOffTime }
+        }
+    }
+
+    data class ComputationStatus(val tasksCalculated: Boolean, val remoteTasksCalculated: Boolean)
 }
 
 interface SystemJobStore {

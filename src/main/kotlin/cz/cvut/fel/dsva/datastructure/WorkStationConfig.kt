@@ -15,7 +15,7 @@ import java.time.Duration
 data class WorkStationConfig(
     val ip: String,
     val port: Int,
-    val maxConnectionTimeout: Duration,
+    val maxCalculationDuration: Duration,
     val batchSize: Int,
     val otherWorkstations: List<RemoteWorkStation>,
 ) {
