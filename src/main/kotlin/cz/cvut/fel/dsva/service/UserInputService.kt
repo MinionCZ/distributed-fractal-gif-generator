@@ -5,6 +5,8 @@ import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
 import cz.cvut.fel.dsva.grpc.calculationResult
 import cz.cvut.fel.dsva.images.ImagesGenerator
+import cz.cvut.fel.dsva.input.UserInputHolder
+import java.io.File
 import java.time.Duration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -12,7 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 interface UserInputService {
-    suspend fun startNewDistributedJob()
+    suspend fun startNewDistributedJob(userInputHolder: UserInputHolder)
 }
 
 
@@ -21,13 +23,19 @@ class UserInputServiceImpl(
     private val workStationConfig: WorkStationConfig,
     private val imagesGenerator: ImagesGenerator,
 ) : UserInputService {
-    override suspend fun startNewDistributedJob() {
+    override suspend fun startNewDistributedJob(userInputHolder: UserInputHolder) {
         coroutineScope {
             launch(Dispatchers.IO) {
                 val remoteJobs = prepareRemoteJobs()
                 sendRemoteJobs(remoteJobs)
                 calculateTasks()
                 awaitCalculationFinish()
+                imagesGenerator.createGif(
+                    userInputHolder.gifProperties,
+                    userInputHolder.imageProperties,
+                    systemJobStore.getSystemJob().calculatedImagesCopy
+                )
+                systemJobStore.removeSystemJob()
             }
         }
 
@@ -89,7 +97,6 @@ class UserInputServiceImpl(
                 delay(DELAY.toMillis())
             }
         } while (!status.tasksCalculated || !status.remoteTasksCalculated)
-
     }
 
     companion object {

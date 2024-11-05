@@ -1,5 +1,6 @@
 package cz.cvut.fel.dsva.datastructure.system
 
+import com.google.rpc.Help.Link
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
 import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.grpc.CalculationRequest
@@ -16,6 +17,9 @@ class Job(
     private val remoteTasks: MutableList<RemoteTaskBatch> = LinkedList()
     private val tasks = LinkedList(tasks)
     private val calculatedImages = LinkedList<CalculationResult>()
+
+    val calculatedImagesCopy: List<CalculationResult>
+        get() = LinkedList(this.calculatedImages)
 
     fun popFirstTask(): CalculationRequest? {
         return synchronized(this) {
@@ -90,6 +94,7 @@ class Job(
             return this.remoteTasks.filter { it.startTimestamp.plus(timeout) <= cutOffTime }
         }
     }
+
 
     data class ComputationStatus(val tasksCalculated: Boolean, val remoteTasksCalculated: Boolean)
 }

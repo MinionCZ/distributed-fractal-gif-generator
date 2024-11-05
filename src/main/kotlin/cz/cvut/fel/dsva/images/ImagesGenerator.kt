@@ -1,20 +1,32 @@
 package cz.cvut.fel.dsva.images
 
+import com.sksamuel.scrimage.ImmutableImage
+import com.sksamuel.scrimage.nio.StreamingGifWriter
 import com.sksamuel.scrimage.pixels.PixelTools
-import cz.cvut.fel.dsva.grpc.ImageProperties
+import cz.cvut.fel.dsva.grpc.CalculationResult
 import cz.cvut.fel.dsva.grpc.JuliaSetProperties
 import cz.cvut.fel.dsva.grpc.Pixel
+import cz.cvut.fel.dsva.input.GifProperties
+import cz.cvut.fel.dsva.input.ImageProperties
+import cz.cvut.fel.dsva.toRenderPixels
+import java.awt.image.BufferedImage
+import java.io.File
 import kotlin.math.log
 import kotlin.math.pow
-
+import cz.cvut.fel.dsva.grpc.ImageProperties as GrpcImageProperties
 
 interface ImagesGenerator {
-    fun generateJuliaSetImage(imageProperties: ImageProperties, juliaSetProperties: JuliaSetProperties): Array<Pixel>
+    fun generateJuliaSetImage(imageProperties: GrpcImageProperties, juliaSetProperties: JuliaSetProperties): Array<Pixel>
+    fun createGif(
+        gifProperties: GifProperties,
+        imageProperties: ImageProperties,
+        images: List<CalculationResult>
+    )
 }
 
 class ImagesGeneratorImpl : ImagesGenerator {
     override fun generateJuliaSetImage(
-        imageProperties: ImageProperties,
+        imageProperties: GrpcImageProperties,
         juliaSetProperties: JuliaSetProperties
     ): Array<Pixel> {
         val totalLength = imageProperties.height * imageProperties.width
@@ -27,7 +39,7 @@ class ImagesGeneratorImpl : ImagesGenerator {
     }
 
     private fun calculatePixelColor(
-        imageProperties: ImageProperties,
+        imageProperties: GrpcImageProperties,
         juliaSetProperties: JuliaSetProperties,
         x: Int,
         y: Int
@@ -57,5 +69,21 @@ class ImagesGeneratorImpl : ImagesGenerator {
             }
         }
         return Pixel.newBuilder().setX(x).setY(pictureY).setArgb(0).build()
+    }
+
+    override fun createGif(
+        gifProperties: GifProperties,
+        imageProperties: ImageProperties,
+        images: List<CalculationResult>
+    ) {
+        val imageDuration = gifProperties.duration.dividedBy(gifProperties.numberOfFrames.toLong())
+        val writer = StreamingGifWriter(imageDuration, true, false)
+        writer.prepareStream(File(gifProperties.filename), BufferedImage.TYPE_INT_ARGB).use {
+            val sortedImages = images.sortedBy { image -> image.imageProperties.id }
+            for (frame in sortedImages) {
+                val pixels = frame.pixelsList.toRenderPixels().toTypedArray()
+                it.writeFrame(ImmutableImage.create(imageProperties.width, imageProperties.height, pixels))
+            }
+        }
     }
 }

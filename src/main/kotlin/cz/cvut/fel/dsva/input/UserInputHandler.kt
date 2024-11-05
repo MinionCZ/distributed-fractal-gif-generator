@@ -49,7 +49,7 @@ class UserInputHandler(
             validateWorkstationState()
             enqueueNewUserJob(parsedInput)
             println("New job has started")
-            userInputService.startNewDistributedJob()
+            userInputService.startNewDistributedJob(parsedInput)
             // todo start calculation
         } catch (e: IllegalStateException) {
             System.err.println(e.message)
@@ -174,6 +174,7 @@ data class ImageProperties(
 data class GifProperties(
     val numberOfFrames: Int,
     val duration: Duration,
+    val filename: String,
 ) : Validatable {
     override fun validate() {
         if (numberOfFrames !in NUMBER_OF_FRAME_RANGE) {
@@ -183,11 +184,19 @@ data class GifProperties(
         if (duration > MAX_DURATION) {
             throw IllegalArgumentException("Duration should be less than $MAX_DURATION, but was $duration")
         }
+
+        if (filename.isBlank()) {
+            throw IllegalArgumentException("Filename must not be blank")
+        }
+        if (!filename.endsWith(VALID_FILE_EXTENSION)) {
+            throw IllegalArgumentException("Filename must end with a valid extension $VALID_FILE_EXTENSION")
+        }
     }
 
     private companion object {
         private val MAX_DURATION = Duration.ofSeconds(30)
         private val NUMBER_OF_FRAME_RANGE = 1..900
+        private const val VALID_FILE_EXTENSION = ".gif"
     }
 }
 
