@@ -20,6 +20,7 @@ dependencies {
     implementation(libs.jackson)
     implementation(libs.jacksonKotlin)
     implementation(libs.jacksonDateTime)
+    implementation(libs.grpcServer)
     testImplementation(kotlin("test"))
 }
 

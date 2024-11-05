@@ -1,6 +1,7 @@
 package cz.cvut.fel.dsva.service
 
 import com.google.protobuf.Empty
+import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.Job
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
@@ -19,7 +20,7 @@ import kotlinx.coroutines.launch
 class JuliaSetServiceImpl(
     private val systemJobStore: SystemJobStore,
     private val imagesGenerator: ImagesGenerator,
-    private val thisWorkStation: WorkStationConfig,
+    private val workStation: WorkStationConfig,
 ) : JuliaSetService {
     override suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult {
         return if (systemJobStore.isSystemJobPresent()) {
@@ -38,9 +39,10 @@ class JuliaSetServiceImpl(
 
     override fun handleNewWorkRequest(workStation: WorkStation): BatchCalculationRequest {
         return try {
+            val remoteWorkStation = this.workStation.findRemoteWorkStation(workStation)
             systemJobStore
                 .getSystemJob()
-                .createRemoteJob(thisWorkStation.batchSize, workStation)
+                .createRemoteJob(this.workStation.batchSize, remoteWorkStation)
                 .toBatchCalculationRequest()
         } catch (e: IllegalStateException) {
             BatchCalculationRequest.getDefaultInstance()
@@ -49,7 +51,8 @@ class JuliaSetServiceImpl(
 
     override fun handleDoneWork(calculationResult: BatchCalculationResult): Empty {
         try {
-            systemJobStore.getSystemJob().addCalculationResults(calculationResult.resultsList, calculationResult.worker)
+            val remoteWorker = workStation.findRemoteWorkStation(calculationResult.worker)
+            systemJobStore.getSystemJob().addCalculationResults(calculationResult.resultsList, remoteWorker)
         } catch (e: IllegalStateException) {
             //TODO log
         }

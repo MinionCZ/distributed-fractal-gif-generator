@@ -1,22 +1,6 @@
 package cz.cvut.fel.dsva.datastructure.user
 
-import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
-import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.Pixel
-import java.util.concurrent.CopyOnWriteArrayList
-
-data class UserJob(
-    val width: Int,
-    val height: Int,
-    val escapeRadius: Double,
-    val remainingTasks: MutableList<CalculationRequest>,
-    val resultName: String,
-) {
-    val calculatedImages: MutableList<CalculatedImage> = CopyOnWriteArrayList()
-    val remoteTasks: Collection<RemoteTaskBatch> = CopyOnWriteArrayList()
-}
-
-
 
 data class CalculatedImage(
     val id: Int,

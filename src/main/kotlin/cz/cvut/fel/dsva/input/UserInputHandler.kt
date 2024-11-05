@@ -10,6 +10,7 @@ import cz.cvut.fel.dsva.grpc.calculationRequest
 import cz.cvut.fel.dsva.grpc.complexNumber
 import cz.cvut.fel.dsva.grpc.imageProperties
 import cz.cvut.fel.dsva.grpc.juliaSetProperties
+import cz.cvut.fel.dsva.service.UserInputService
 import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
@@ -24,7 +25,8 @@ import kotlinx.coroutines.launch
 class UserInputHandler(
     private val systemJobStore: SystemJobStore,
     private val currentWorkStationConfig: WorkStationConfig,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val userInputService: UserInputService,
 ) {
     suspend fun startInputHandler() {
         coroutineScope {
@@ -40,13 +42,14 @@ class UserInputHandler(
         }
     }
 
-    private fun handleUserInput(line: String) {
+    private suspend fun handleUserInput(line: String) {
         try {
             val parsedInput = parseUserInput(line)
             parsedInput.validate()
             validateWorkstationState()
             enqueueNewUserJob(parsedInput)
             println("New job has started")
+            userInputService.startNewDistributedJob()
             // todo start calculation
         } catch (e: IllegalStateException) {
             System.err.println(e.message)

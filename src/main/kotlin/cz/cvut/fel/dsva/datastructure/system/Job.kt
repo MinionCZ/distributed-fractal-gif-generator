@@ -1,6 +1,7 @@
 package cz.cvut.fel.dsva.datastructure.system
 
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
+import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationResult
 import cz.cvut.fel.dsva.grpc.WorkStation
@@ -31,7 +32,7 @@ class Job(
         }
     }
 
-    fun createRemoteJob(numberOfTasks: Int, worker: WorkStation): RemoteTaskBatch {
+    fun createRemoteJob(numberOfTasks: Int, worker: RemoteWorkStation): RemoteTaskBatch {
         return synchronized(this) {
             check(numberOfTasks <= tasks.size) {
                 "Not enough tasks to create remote job"
@@ -45,7 +46,7 @@ class Job(
     }
 
 
-    fun addCalculationResults(calculationResults: List<CalculationResult>, workStation: WorkStation) {
+    fun addCalculationResults(calculationResults: List<CalculationResult>, workStation: RemoteWorkStation) {
         synchronized(this) {
             val removed = remoteTasks.removeIf {
                 it.worker == workStation
@@ -54,6 +55,13 @@ class Job(
                 "Unknown results from worker"
             }
             calculatedImages.addAll(calculationResults)
+        }
+    }
+
+    fun deleteRemoteJob(remoteTaskBatch: RemoteTaskBatch) {
+        synchronized(this) {
+            remoteTasks.remove(remoteTaskBatch)
+            tasks.addAll(remoteTaskBatch.tasks)
         }
     }
 }
