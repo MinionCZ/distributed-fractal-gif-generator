@@ -2,10 +2,11 @@ package cz.cvut.fel.dsva.images
 
 import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.StreamingGifWriter
+import com.sksamuel.scrimage.pixels.Pixel
 import com.sksamuel.scrimage.pixels.PixelTools
+import com.sksamuel.scrimage.pixels.PixelTools.rgb
 import cz.cvut.fel.dsva.grpc.CalculationResult
 import cz.cvut.fel.dsva.grpc.JuliaSetProperties
-import cz.cvut.fel.dsva.grpc.Pixel
 import cz.cvut.fel.dsva.input.GifProperties
 import cz.cvut.fel.dsva.input.ImageProperties
 import java.awt.Color
@@ -20,7 +21,7 @@ interface ImagesGenerator {
     fun generateJuliaSetImage(
         imageProperties: GrpcImageProperties,
         juliaSetProperties: JuliaSetProperties
-    ): Array<Pixel>
+    ): ByteArray
 
     fun createGif(
         gifProperties: GifProperties,
@@ -33,12 +34,16 @@ class ImagesGeneratorImpl : ImagesGenerator {
     override fun generateJuliaSetImage(
         imageProperties: GrpcImageProperties,
         juliaSetProperties: JuliaSetProperties
-    ): Array<Pixel> {
-        val totalLength = imageProperties.height * imageProperties.width
-        val generatedImage = Array(totalLength) { index ->
-            val x = index % imageProperties.width
-            val y = index / imageProperties.width
-            calculatePixelColor(imageProperties, juliaSetProperties, x, y)
+    ): ByteArray {
+        val totalLength = imageProperties.height * imageProperties.width * 3
+        val generatedImage = ByteArray(totalLength)
+        for (i in 0 until totalLength step 3) {
+            val x = (i / 3) % imageProperties.width
+            val y = (i / 3) / imageProperties.width
+            val (r, g, b) = calculatePixelColor(imageProperties, juliaSetProperties, x, y)
+            generatedImage[i] = r
+            generatedImage[i + 1] = g
+            generatedImage[i + 2] = b
         }
         return generatedImage
     }
@@ -48,7 +53,7 @@ class ImagesGeneratorImpl : ImagesGenerator {
         juliaSetProperties: JuliaSetProperties,
         x: Int,
         y: Int
-    ): Pixel {
+    ): Triple<Byte, Byte, Byte> {
         val escapeRadius = juliaSetProperties.escapeRadius
         val startingXOffset =
             ((juliaSetProperties.topRightCorner.real - juliaSetProperties.bottomLeftCorner.real) / imageProperties.width) * x
@@ -56,7 +61,6 @@ class ImagesGeneratorImpl : ImagesGenerator {
             ((juliaSetProperties.topRightCorner.imaginary - juliaSetProperties.bottomLeftCorner.imaginary) / imageProperties.height) * y
         var xValue: Double = juliaSetProperties.bottomLeftCorner.real + startingXOffset
         var yValue: Double = juliaSetProperties.bottomLeftCorner.imaginary + startingYOffset
-        val pictureY = imageProperties.height - y - 1
         for (i in 0..<juliaSetProperties.maxIterations) {
             val xTemp = xValue * xValue - yValue * yValue
             yValue = 2 * xValue * yValue + juliaSetProperties.offset.imaginary
@@ -66,14 +70,13 @@ class ImagesGeneratorImpl : ImagesGenerator {
                 val lastIteration =
                     i + 1 - log(log(absZ, Math.E), Math.E) / log(juliaSetProperties.maxIterations.toDouble(), Math.E)
                 val t: Double = lastIteration / juliaSetProperties.maxIterations.toDouble()
-                val red = (9 * (1 - t) * t.pow(3.0) * 255.0).toInt()
-                val green = (15 * (1 - t).pow(2.0) * t.pow(2.0) * 255.0).toInt()
-                val blue = (8.5 * (1 - t).pow(3.0) * t * 255.0).toInt()
-                val argb = PixelTools.rgb(red, green, blue)
-                return Pixel.newBuilder().setX(x).setY(pictureY).setArgb(argb).build()
+                val red = (9 * (1 - t) * t.pow(3.0) * 255.0).toInt().toByte()
+                val green = (15 * (1 - t).pow(2.0) * t.pow(2.0) * 255.0).toInt().toByte()
+                val blue = (8.5 * (1 - t).pow(3.0) * t * 255.0).toInt().toByte()
+                return Triple(red, green, blue)
             }
         }
-        return Pixel.newBuilder().setX(x).setY(pictureY).setArgb(0).build()
+        return Triple(0, 0, 0)
     }
 
     override fun createGif(
@@ -86,7 +89,16 @@ class ImagesGeneratorImpl : ImagesGenerator {
         writer.prepareStream(File(gifProperties.filename), BufferedImage.TYPE_INT_ARGB).use {
             val sortedImages = images.sortedBy { image -> image.imageProperties.id }
             for (frame in sortedImages) {
-                val pixels = frame.pixelsList.map { com.sksamuel.scrimage.pixels.Pixel(it.x, it.y, it.argb) }.toTypedArray()
+                val calculatedPixels = frame.pixels.toByteArray()
+                val pixels = Array(imageProperties.width * imageProperties.height) { i ->
+                    val x = i % imageProperties.width
+                    val y = i / imageProperties.width
+                    val r = calculatedPixels[i * 3].toInt() and 0xff
+                    val g = calculatedPixels[i * 3 + 1].toInt() and 0xff
+                    val b = calculatedPixels[i * 3 + 2].toInt() and 0xff
+                    Pixel(x, y, rgb(r, g, b))
+                }
+
                 it.writeFrame(ImmutableImage.create(imageProperties.width, imageProperties.height, pixels))
             }
         }

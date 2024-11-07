@@ -1,5 +1,6 @@
 package cz.cvut.fel.dsva.service
 
+import com.google.protobuf.ByteString
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
 import cz.cvut.fel.dsva.grpc.calculationResult
@@ -28,7 +29,7 @@ class JobServiceImpl(
             val calculatedPixels = imagesGenerator.generateJuliaSetImage(task.imageProperties, task.juliaSetProperties)
             systemJobStore.getSystemJob().addCalculationResult(calculationResult {
                 imageProperties = task.imageProperties
-                pixels.addAll(calculatedPixels.toList())
+                pixels = ByteString.copyFrom(calculatedPixels)
             })
         }
     }
