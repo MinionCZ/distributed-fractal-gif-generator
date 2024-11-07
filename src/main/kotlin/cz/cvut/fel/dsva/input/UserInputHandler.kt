@@ -50,7 +50,6 @@ class UserInputHandler(
             enqueueNewUserJob(parsedInput)
             println("New job has started")
             userInputService.startNewDistributedJob(parsedInput)
-            // todo start calculation
         } catch (e: IllegalStateException) {
             System.err.println(e.message)
         } catch (e: IOException) {
@@ -97,7 +96,7 @@ class UserInputHandler(
         var calculationOffset = userInputHolder.juliaSetProperties.startingOffset
         var iteration = userInputHolder.juliaSetProperties.startingNumberOfIterations
         val topRightCornerInProtobufFormat = userInputHolder.juliaSetProperties.topRightCorner.toProtobufFormat()
-        val bottomLeftCornerInProtobufFormat = userInputHolder.juliaSetProperties.topRightCorner.toProtobufFormat()
+        val bottomLeftCornerInProtobufFormat = userInputHolder.juliaSetProperties.bottomLeftCorner.toProtobufFormat()
         for (i in 0..<userInputHolder.gifProperties.numberOfFrames) {
             val task = calculationRequest {
                 imageProperties = userInputHolder.imageProperties.toProtobufFormat(i)
@@ -137,8 +136,8 @@ data class ComplexNumber(val real: Double, val imaginary: Double) {
     }
 
     fun toProtobufFormat(): cz.cvut.fel.dsva.grpc.ComplexNumber = complexNumber {
-        imaginary = this.imaginary
-        real = this.real
+        imaginary = this@ComplexNumber.imaginary
+        real = this@ComplexNumber.real
     }
 }
 
@@ -161,8 +160,8 @@ data class ImageProperties(
 
     fun toProtobufFormat(frameId: Int): cz.cvut.fel.dsva.grpc.ImageProperties = imageProperties {
         id = frameId
-        width = this.width
-        height = this.height
+        width = this@ImageProperties.width
+        height = this@ImageProperties.height
     }
 
     private companion object {

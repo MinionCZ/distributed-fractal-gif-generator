@@ -3,14 +3,10 @@ package cz.cvut.fel.dsva.service
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
-import cz.cvut.fel.dsva.grpc.calculationResult
 import cz.cvut.fel.dsva.images.ImagesGenerator
 import cz.cvut.fel.dsva.input.UserInputHolder
-import java.io.File
-import java.time.Duration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 interface UserInputService {
@@ -22,14 +18,15 @@ class UserInputServiceImpl(
     private val systemJobStore: SystemJobStore,
     private val workStationConfig: WorkStationConfig,
     private val imagesGenerator: ImagesGenerator,
+    private val jobService: JobService,
 ) : UserInputService {
     override suspend fun startNewDistributedJob(userInputHolder: UserInputHolder) {
         coroutineScope {
             launch(Dispatchers.IO) {
                 val remoteJobs = prepareRemoteJobs()
                 sendRemoteJobs(remoteJobs)
-                calculateTasks()
-                awaitCalculationFinish()
+                jobService.calculateTasks()
+                jobService.awaitCalculationFinish()
                 imagesGenerator.createGif(
                     userInputHolder.gifProperties,
                     userInputHolder.imageProperties,
@@ -65,41 +62,5 @@ class UserInputServiceImpl(
                 }
             }
         }
-    }
-
-    private fun calculateTasks() {
-        while (true) {
-            val task = systemJobStore.getSystemJob().popFirstTask() ?: break
-            val calculatedPixels = imagesGenerator.generateJuliaSetImage(task.imageProperties, task.juliaSetProperties)
-            systemJobStore.getSystemJob().addCalculationResult(calculationResult {
-                imageProperties = task.imageProperties
-                pixels.addAll(calculatedPixels.toList())
-            })
-        }
-    }
-
-    private suspend fun awaitCalculationFinish() {
-        do {
-            val status = systemJobStore.getSystemJob().checkIfWorkIsDone()
-            if (!status.remoteTasksCalculated) {
-                val timeOutedJobs =
-                    systemJobStore.getSystemJob().getTimeOutedJobs(workStationConfig.maxCalculationDuration)
-                systemJobStore.getSystemJob().deleteRemoteJobs(timeOutedJobs)
-            }
-            if (!status.tasksCalculated) {
-                coroutineScope {
-                    launch(Dispatchers.IO) {
-                        calculateTasks()
-                    }
-                }
-            }
-            if (!status.tasksCalculated || !status.remoteTasksCalculated) {
-                delay(DELAY.toMillis())
-            }
-        } while (!status.tasksCalculated || !status.remoteTasksCalculated)
-    }
-
-    companion object {
-        private val DELAY = Duration.ofSeconds(1)
     }
 }

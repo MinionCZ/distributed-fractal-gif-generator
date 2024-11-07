@@ -8,6 +8,7 @@ import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStoreImpl
 import cz.cvut.fel.dsva.images.ImagesGeneratorImpl
 import cz.cvut.fel.dsva.input.UserInputHandler
+import cz.cvut.fel.dsva.service.JobServiceImpl
 import cz.cvut.fel.dsva.service.JuliaSetServiceImpl
 import cz.cvut.fel.dsva.service.UserInputServiceImpl
 import io.grpc.ServerBuilder
@@ -19,8 +20,9 @@ fun main(args: Array<String>) {
     val workStationConfig = WorkStationConfig.fromPropertiesFile(args.getPropertiesFileName(), objectMapper)
     val systemJobStore = SystemJobStoreImpl()
     val imagesGenerator = ImagesGeneratorImpl()
-    val juliaSetService = JuliaSetServiceImpl(systemJobStore, imagesGenerator, workStationConfig)
-    val userInputService = UserInputServiceImpl(systemJobStore, workStationConfig, imagesGenerator)
+    val jobService = JobServiceImpl(systemJobStore, imagesGenerator, workStationConfig)
+    val juliaSetService = JuliaSetServiceImpl(systemJobStore, workStationConfig, jobService)
+    val userInputService = UserInputServiceImpl(systemJobStore, workStationConfig, imagesGenerator, jobService)
     val userInputHandler = UserInputHandler(systemJobStore, workStationConfig, objectMapper, userInputService)
     val juliaSetApiHandler = JuliaSetApiHandler(juliaSetService)
     val server = ServerBuilder.forPort(workStationConfig.port).addService(juliaSetApiHandler).build()

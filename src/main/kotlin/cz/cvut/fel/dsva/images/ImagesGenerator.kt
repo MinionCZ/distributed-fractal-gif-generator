@@ -8,15 +8,20 @@ import cz.cvut.fel.dsva.grpc.JuliaSetProperties
 import cz.cvut.fel.dsva.grpc.Pixel
 import cz.cvut.fel.dsva.input.GifProperties
 import cz.cvut.fel.dsva.input.ImageProperties
-import cz.cvut.fel.dsva.toRenderPixels
+import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.File
+import java.time.Duration
 import kotlin.math.log
 import kotlin.math.pow
 import cz.cvut.fel.dsva.grpc.ImageProperties as GrpcImageProperties
 
 interface ImagesGenerator {
-    fun generateJuliaSetImage(imageProperties: GrpcImageProperties, juliaSetProperties: JuliaSetProperties): Array<Pixel>
+    fun generateJuliaSetImage(
+        imageProperties: GrpcImageProperties,
+        juliaSetProperties: JuliaSetProperties
+    ): Array<Pixel>
+
     fun createGif(
         gifProperties: GifProperties,
         imageProperties: ImageProperties,
@@ -81,7 +86,7 @@ class ImagesGeneratorImpl : ImagesGenerator {
         writer.prepareStream(File(gifProperties.filename), BufferedImage.TYPE_INT_ARGB).use {
             val sortedImages = images.sortedBy { image -> image.imageProperties.id }
             for (frame in sortedImages) {
-                val pixels = frame.pixelsList.toRenderPixels().toTypedArray()
+                val pixels = frame.pixelsList.map { com.sksamuel.scrimage.pixels.Pixel(it.x, it.y, it.argb) }.toTypedArray()
                 it.writeFrame(ImmutableImage.create(imageProperties.width, imageProperties.height, pixels))
             }
         }
