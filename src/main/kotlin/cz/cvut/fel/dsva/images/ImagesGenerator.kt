@@ -38,12 +38,7 @@ class ImagesGeneratorImpl : ImagesGenerator {
         val totalLength = imageProperties.height * imageProperties.width * 3
         val generatedImage = ByteArray(totalLength)
         for (i in 0 until totalLength step 3) {
-            val x = (i / 3) % imageProperties.width
-            val y = (i / 3) / imageProperties.width
-            val (r, g, b) = calculatePixelColor(imageProperties, juliaSetProperties, x, y)
-            generatedImage[i] = r
-            generatedImage[i + 1] = g
-            generatedImage[i + 2] = b
+            calculatePixelColor(imageProperties, juliaSetProperties, i, generatedImage)
         }
         return generatedImage
     }
@@ -51,9 +46,11 @@ class ImagesGeneratorImpl : ImagesGenerator {
     private fun calculatePixelColor(
         imageProperties: GrpcImageProperties,
         juliaSetProperties: JuliaSetProperties,
-        x: Int,
-        y: Int
-    ): Triple<Byte, Byte, Byte> {
+        index: Int,
+        generatedImagePayload: ByteArray,
+    ) {
+        val x = (index / 3) % imageProperties.width
+        val y = (index / 3) / imageProperties.width
         val escapeRadius = juliaSetProperties.escapeRadius
         val startingXOffset =
             ((juliaSetProperties.topRightCorner.real - juliaSetProperties.bottomLeftCorner.real) / imageProperties.width) * x
@@ -70,13 +67,15 @@ class ImagesGeneratorImpl : ImagesGenerator {
                 val lastIteration =
                     i + 1 - log(log(absZ, Math.E), Math.E) / log(juliaSetProperties.maxIterations.toDouble(), Math.E)
                 val t: Double = lastIteration / juliaSetProperties.maxIterations.toDouble()
-                val red = (9 * (1 - t) * t.pow(3.0) * 255.0).toInt().toByte()
-                val green = (15 * (1 - t).pow(2.0) * t.pow(2.0) * 255.0).toInt().toByte()
-                val blue = (8.5 * (1 - t).pow(3.0) * t * 255.0).toInt().toByte()
-                return Triple(red, green, blue)
+                generatedImagePayload[index] = (9 * (1 - t) * t.pow(3.0) * 255.0).toInt().toByte()
+                generatedImagePayload[index + 1] = (15 * (1 - t).pow(2.0) * t.pow(2.0) * 255.0).toInt().toByte()
+                generatedImagePayload[index + 2] = (8.5 * (1 - t).pow(3.0) * t * 255.0).toInt().toByte()
+                return
             }
         }
-        return Triple(0, 0, 0)
+        generatedImagePayload[index] = 0
+        generatedImagePayload[index + 1] = 0
+        generatedImagePayload[index + 2] = 0
     }
 
     override fun createGif(
