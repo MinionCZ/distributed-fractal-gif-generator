@@ -10,6 +10,7 @@ import cz.cvut.fel.dsva.grpc.calculationRequest
 import cz.cvut.fel.dsva.grpc.complexNumber
 import cz.cvut.fel.dsva.grpc.imageProperties
 import cz.cvut.fel.dsva.grpc.juliaSetProperties
+import cz.cvut.fel.dsva.service.UserInputService
 import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
@@ -24,7 +25,8 @@ import kotlinx.coroutines.launch
 class UserInputHandler(
     private val systemJobStore: SystemJobStore,
     private val currentWorkStationConfig: WorkStationConfig,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val userInputService: UserInputService,
 ) {
     suspend fun startInputHandler() {
         coroutineScope {
@@ -40,14 +42,14 @@ class UserInputHandler(
         }
     }
 
-    private fun handleUserInput(line: String) {
+    private suspend fun handleUserInput(line: String) {
         try {
             val parsedInput = parseUserInput(line)
             parsedInput.validate()
             validateWorkstationState()
             enqueueNewUserJob(parsedInput)
             println("New job has started")
-            // todo start calculation
+            userInputService.startNewDistributedJob(parsedInput)
         } catch (e: IllegalStateException) {
             System.err.println(e.message)
         } catch (e: IOException) {
@@ -94,7 +96,7 @@ class UserInputHandler(
         var calculationOffset = userInputHolder.juliaSetProperties.startingOffset
         var iteration = userInputHolder.juliaSetProperties.startingNumberOfIterations
         val topRightCornerInProtobufFormat = userInputHolder.juliaSetProperties.topRightCorner.toProtobufFormat()
-        val bottomLeftCornerInProtobufFormat = userInputHolder.juliaSetProperties.topRightCorner.toProtobufFormat()
+        val bottomLeftCornerInProtobufFormat = userInputHolder.juliaSetProperties.bottomLeftCorner.toProtobufFormat()
         for (i in 0..<userInputHolder.gifProperties.numberOfFrames) {
             val task = calculationRequest {
                 imageProperties = userInputHolder.imageProperties.toProtobufFormat(i)
@@ -134,8 +136,8 @@ data class ComplexNumber(val real: Double, val imaginary: Double) {
     }
 
     fun toProtobufFormat(): cz.cvut.fel.dsva.grpc.ComplexNumber = complexNumber {
-        imaginary = this.imaginary
-        real = this.real
+        imaginary = this@ComplexNumber.imaginary
+        real = this@ComplexNumber.real
     }
 }
 
@@ -158,8 +160,8 @@ data class ImageProperties(
 
     fun toProtobufFormat(frameId: Int): cz.cvut.fel.dsva.grpc.ImageProperties = imageProperties {
         id = frameId
-        width = this.width
-        height = this.height
+        width = this@ImageProperties.width
+        height = this@ImageProperties.height
     }
 
     private companion object {
@@ -171,6 +173,7 @@ data class ImageProperties(
 data class GifProperties(
     val numberOfFrames: Int,
     val duration: Duration,
+    val filename: String,
 ) : Validatable {
     override fun validate() {
         if (numberOfFrames !in NUMBER_OF_FRAME_RANGE) {
@@ -180,11 +183,19 @@ data class GifProperties(
         if (duration > MAX_DURATION) {
             throw IllegalArgumentException("Duration should be less than $MAX_DURATION, but was $duration")
         }
+
+        if (filename.isBlank()) {
+            throw IllegalArgumentException("Filename must not be blank")
+        }
+        if (!filename.endsWith(VALID_FILE_EXTENSION)) {
+            throw IllegalArgumentException("Filename must end with a valid extension $VALID_FILE_EXTENSION")
+        }
     }
 
     private companion object {
         private val MAX_DURATION = Duration.ofSeconds(30)
         private val NUMBER_OF_FRAME_RANGE = 1..900
+        private const val VALID_FILE_EXTENSION = ".gif"
     }
 }
 

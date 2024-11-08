@@ -1,7 +1,7 @@
 {
   "ip": "127.0.0.1",
   "port": 8990,
-  "maxConnectionTimeout": "PT30S",
+  "maxCalculationDuration": "PT30S",
   "batchSize": 5,
   "otherWorkstations": []
 }

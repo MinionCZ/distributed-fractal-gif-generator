@@ -1,6 +1,7 @@
 package cz.cvut.fel.dsva.service
 
 import com.google.protobuf.Empty
+import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.Job
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
@@ -18,8 +19,8 @@ import kotlinx.coroutines.launch
 
 class JuliaSetServiceImpl(
     private val systemJobStore: SystemJobStore,
-    private val imagesGenerator: ImagesGenerator,
-    private val thisWorkStation: WorkStationConfig,
+    private val workStation: WorkStationConfig,
+    private val jobService: JobService,
 ) : JuliaSetService {
     override suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult {
         return if (systemJobStore.isSystemJobPresent()) {
@@ -38,9 +39,10 @@ class JuliaSetServiceImpl(
 
     override fun handleNewWorkRequest(workStation: WorkStation): BatchCalculationRequest {
         return try {
+            val remoteWorkStation = this.workStation.findRemoteWorkStation(workStation)
             systemJobStore
                 .getSystemJob()
-                .createRemoteJob(thisWorkStation.batchSize, workStation)
+                .createRemoteJob(this.workStation.batchSize, remoteWorkStation)
                 .toBatchCalculationRequest()
         } catch (e: IllegalStateException) {
             BatchCalculationRequest.getDefaultInstance()
@@ -49,7 +51,8 @@ class JuliaSetServiceImpl(
 
     override fun handleDoneWork(calculationResult: BatchCalculationResult): Empty {
         try {
-            systemJobStore.getSystemJob().addCalculationResults(calculationResult.resultsList, calculationResult.worker)
+            val remoteWorker = workStation.findRemoteWorkStation(calculationResult.worker)
+            systemJobStore.getSystemJob().addCalculationResults(calculationResult.resultsList, remoteWorker)
         } catch (e: IllegalStateException) {
             //TODO log
         }
@@ -60,17 +63,8 @@ class JuliaSetServiceImpl(
     private suspend fun runCalculationOnBackground() {
         coroutineScope {
             launch(Dispatchers.Default) {
-                val systemJob = systemJobStore.getSystemJob()
-                while (true) {
-                    val task = systemJob.popFirstTask() ?: break
-                    val calculatedImage =
-                        imagesGenerator.generateJuliaSetImage(task.imageProperties, task.juliaSetProperties)
-                    systemJob.addCalculationResult(calculationResult {
-                        imageProperties = task.imageProperties
-                        pixels.addAll(calculatedImage.toList())
-                    })
-                }
-                //TODO check if remote computation is done as well and return results
+                jobService.calculateTasks()
+                jobService.awaitCalculationFinish()
             }
         }
     }
@@ -81,5 +75,4 @@ interface JuliaSetService {
     suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult
     fun handleNewWorkRequest(workStation: WorkStation): BatchCalculationRequest
     fun handleDoneWork(calculationResult: BatchCalculationResult): Empty
-
 }

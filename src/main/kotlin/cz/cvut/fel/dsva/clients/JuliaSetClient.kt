@@ -33,13 +33,13 @@ class JuliaSetClient(private val channel: ManagedChannel) : Closeable {
         }
         return BatchCalculationRequest.getDefaultInstance()
     }
+
     suspend fun sendCalculationRequest(batchCalculationRequest: BatchCalculationRequest): RequestCalculationRequestResult {
         try {
             return stub.requestCalculation(batchCalculationRequest)
         } catch (e: StatusException) {
-            //TODO add error handling
+            error("Unable to contact remote machine")
         }
-        return RequestCalculationRequestResult.getDefaultInstance()
     }
 
 }

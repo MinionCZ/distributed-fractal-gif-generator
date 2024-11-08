@@ -22,9 +22,10 @@ dependencyResolutionManagement {
             library("grpcKotlin", "io.grpc:grpc-kotlin-stub:$grpcKotlinStubVersion")
             library("grpcKotlinGen", "io.grpc:protoc-gen-grpc-kotlin:$grpcKotlinStubVersion")
             library("coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
-            library("jackson","com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-            library("jacksonKotlin","com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+            library("jackson", "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+            library("jacksonKotlin", "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
             library("jacksonDateTime", "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
+            library("grpcServer", "io.grpc:grpc-netty:$grpcVersion")
         }
     }
 }

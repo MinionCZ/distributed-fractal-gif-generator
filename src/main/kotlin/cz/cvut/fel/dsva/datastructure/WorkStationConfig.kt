@@ -1,10 +1,13 @@
 package cz.cvut.fel.dsva.datastructure
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
+import cz.cvut.fel.dsva.clients.JuliaSetClient
 import cz.cvut.fel.dsva.grpc.WorkStation
 import cz.cvut.fel.dsva.grpc.workStation
+import io.grpc.ManagedChannelBuilder
 import java.io.File
 import java.io.IOException
 import java.time.Duration
@@ -12,7 +15,7 @@ import java.time.Duration
 data class WorkStationConfig(
     val ip: String,
     val port: Int,
-    val maxConnectionTimeout: Duration,
+    val maxCalculationDuration: Duration,
     val batchSize: Int,
     val otherWorkstations: List<RemoteWorkStation>,
 ) {
@@ -20,6 +23,11 @@ data class WorkStationConfig(
         ip = this.ip
         port = this.port
     }
+
+    fun findRemoteWorkStation(workStation: WorkStation): RemoteWorkStation =
+        otherWorkstations.find { it.workStation == workStation }
+            ?: throw NoSuchElementException("Remote workstation $workStation not found")
+
 
     companion object {
         fun fromPropertiesFile(propertiesFileName: String?, objectMapper: ObjectMapper): WorkStationConfig {
@@ -67,4 +75,14 @@ data class WorkStationConfig(
     }
 }
 
-data class RemoteWorkStation(val ip: String, val port: Int)
+data class RemoteWorkStation(val ip: String, val port: Int) {
+
+    @field:JsonIgnore
+    val workStation: WorkStation = workStation {
+        ip = this@RemoteWorkStation.ip
+        port = this@RemoteWorkStation.port
+    }
+
+    fun createClient(): JuliaSetClient =
+        JuliaSetClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build())
+}

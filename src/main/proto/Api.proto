@@ -53,14 +53,9 @@ message ComplexNumber{
 
 message CalculationResult{
   ImageProperties imageProperties = 1;
-  repeated Pixel pixels = 2;
+  bytes pixels = 2;
 }
 
-message Pixel{
-  uint32 x = 1;
-  uint32 y = 2;
-  uint32 argb = 3;
-}
 
 message WorkStation{
   string ip = 1;

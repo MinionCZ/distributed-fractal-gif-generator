@@ -1,9 +1,12 @@
 package cz.cvut.fel.dsva.datastructure.system
 
+import com.google.rpc.Help.Link
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
+import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationResult
 import cz.cvut.fel.dsva.grpc.WorkStation
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.LinkedList
 
@@ -14,6 +17,9 @@ class Job(
     private val remoteTasks: MutableList<RemoteTaskBatch> = LinkedList()
     private val tasks = LinkedList(tasks)
     private val calculatedImages = LinkedList<CalculationResult>()
+
+    val calculatedImagesCopy: List<CalculationResult>
+        get() = LinkedList(this.calculatedImages)
 
     fun popFirstTask(): CalculationRequest? {
         return synchronized(this) {
@@ -31,7 +37,7 @@ class Job(
         }
     }
 
-    fun createRemoteJob(numberOfTasks: Int, worker: WorkStation): RemoteTaskBatch {
+    fun createRemoteJob(numberOfTasks: Int, worker: RemoteWorkStation): RemoteTaskBatch {
         return synchronized(this) {
             check(numberOfTasks <= tasks.size) {
                 "Not enough tasks to create remote job"
@@ -45,7 +51,7 @@ class Job(
     }
 
 
-    fun addCalculationResults(calculationResults: List<CalculationResult>, workStation: WorkStation) {
+    fun addCalculationResults(calculationResults: List<CalculationResult>, workStation: RemoteWorkStation) {
         synchronized(this) {
             val removed = remoteTasks.removeIf {
                 it.worker == workStation
@@ -56,6 +62,41 @@ class Job(
             calculatedImages.addAll(calculationResults)
         }
     }
+
+    fun deleteRemoteJob(remoteTaskBatch: RemoteTaskBatch) {
+        synchronized(this) {
+            remoteTasks.remove(remoteTaskBatch)
+            tasks.addAll(remoteTaskBatch.tasks)
+        }
+    }
+
+    fun deleteRemoteJobs(remoteTaskBatches: List<RemoteTaskBatch>) {
+        synchronized(this) {
+            for (remoteTaskBatch in remoteTaskBatches) {
+                if (remoteTasks.remove(remoteTaskBatch)) {
+                    tasks.addAll(remoteTaskBatch.tasks)
+                }
+            }
+        }
+    }
+
+    fun checkIfWorkIsDone(): ComputationStatus {
+        synchronized(this) {
+            val tasksCalculated = this.tasks.isEmpty()
+            val remoteTasksCalculated = tasks.isEmpty()
+            return ComputationStatus(tasksCalculated, remoteTasksCalculated)
+        }
+    }
+
+    fun getTimeOutedJobs(timeout: Duration): List<RemoteTaskBatch> {
+        synchronized(this) {
+            val cutOffTime = LocalDateTime.now()
+            return this.remoteTasks.filter { it.startTimestamp.plus(timeout) <= cutOffTime }
+        }
+    }
+
+
+    data class ComputationStatus(val tasksCalculated: Boolean, val remoteTasksCalculated: Boolean)
 }
 
 interface SystemJobStore {
