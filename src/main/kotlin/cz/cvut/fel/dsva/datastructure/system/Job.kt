@@ -3,6 +3,7 @@ package cz.cvut.fel.dsva.datastructure.system
 import com.google.rpc.Help.Link
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
 import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
+import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationResult
 import cz.cvut.fel.dsva.grpc.WorkStation
@@ -106,7 +107,7 @@ interface SystemJobStore {
     fun removeSystemJob()
 }
 
-class SystemJobStoreImpl : SystemJobStore {
+class SystemJobStoreImpl(private val workStationConfig: WorkStationConfig) : SystemJobStore {
     private var job: Job? = null
 
     override fun isSystemJobPresent(): Boolean {
@@ -123,11 +124,15 @@ class SystemJobStoreImpl : SystemJobStore {
                 error("System job is already persisted")
             }
             this.job = job
+            workStationConfig.vectorClock.increment()
         }
     }
 
     override fun removeSystemJob() {
-        synchronized(this) { job = null }
+        synchronized(this) {
+            job = null
+            workStationConfig.vectorClock.increment()
+        }
     }
 }
 

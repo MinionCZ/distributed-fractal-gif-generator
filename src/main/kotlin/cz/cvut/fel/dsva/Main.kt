@@ -18,7 +18,7 @@ import kotlinx.coroutines.runBlocking
 fun main(args: Array<String>) {
     val objectMapper = ObjectMapper().registerKotlinModule().registerModules(JavaTimeModule())
     val workStationConfig = WorkStationConfig.fromPropertiesFile(args.getPropertiesFileName(), objectMapper)
-    val systemJobStore = SystemJobStoreImpl()
+    val systemJobStore = SystemJobStoreImpl(workStationConfig)
     val imagesGenerator = ImagesGeneratorImpl()
     val jobService = JobServiceImpl(systemJobStore, imagesGenerator, workStationConfig)
     val juliaSetService = JuliaSetServiceImpl(systemJobStore, workStationConfig, jobService)

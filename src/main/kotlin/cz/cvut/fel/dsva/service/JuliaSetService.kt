@@ -1,18 +1,15 @@
 package cz.cvut.fel.dsva.service
 
 import com.google.protobuf.Empty
-import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.Job
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.BatchCalculationResult
+import cz.cvut.fel.dsva.grpc.NewWorkRequest
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResponseStatus
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
-import cz.cvut.fel.dsva.grpc.WorkStation
-import cz.cvut.fel.dsva.grpc.calculationResult
 import cz.cvut.fel.dsva.grpc.requestCalculationRequestResult
-import cz.cvut.fel.dsva.images.ImagesGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -23,9 +20,11 @@ class JuliaSetServiceImpl(
     private val jobService: JobService,
 ) : JuliaSetService {
     override suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult {
+        this.workStation.vectorClock.update(request.vectorClockList)
         return if (systemJobStore.isSystemJobPresent()) {
             requestCalculationRequestResult {
                 status = RequestCalculationRequestResponseStatus.ALREADY_IN_COMPUTATION
+                vectorClock.addAll(workStation.vectorClock.toGrpcFormat())
             }
         } else {
             val newJob = Job(request.requester, request.requestsList)
@@ -33,23 +32,26 @@ class JuliaSetServiceImpl(
             runCalculationOnBackground()
             requestCalculationRequestResult {
                 status = RequestCalculationRequestResponseStatus.OK
+                vectorClock.addAll(workStation.vectorClock.toGrpcFormat())
             }
         }
     }
 
-    override fun handleNewWorkRequest(workStation: WorkStation): BatchCalculationRequest {
+    override fun handleNewWorkRequest(newWorkRequest: NewWorkRequest): BatchCalculationRequest {
         return try {
-            val remoteWorkStation = this.workStation.findRemoteWorkStation(workStation)
+            this.workStation.vectorClock.update(newWorkRequest.vectorClockList)
+            val remoteWorkStation = this.workStation.findRemoteWorkStation(newWorkRequest.station)
             systemJobStore
                 .getSystemJob()
                 .createRemoteJob(this.workStation.batchSize, remoteWorkStation)
-                .toBatchCalculationRequest()
+                .toBatchCalculationRequest(this.workStation.vectorClock.toGrpcFormat())
         } catch (e: IllegalStateException) {
             BatchCalculationRequest.getDefaultInstance()
         }
     }
 
     override fun handleDoneWork(calculationResult: BatchCalculationResult): Empty {
+        this.workStation.vectorClock.update(calculationResult.vectorClockList)
         try {
             val remoteWorker = workStation.findRemoteWorkStation(calculationResult.worker)
             systemJobStore.getSystemJob().addCalculationResults(calculationResult.resultsList, remoteWorker)
@@ -73,6 +75,6 @@ class JuliaSetServiceImpl(
 
 interface JuliaSetService {
     suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult
-    fun handleNewWorkRequest(workStation: WorkStation): BatchCalculationRequest
+    fun handleNewWorkRequest(newWorkRequest: NewWorkRequest): BatchCalculationRequest
     fun handleDoneWork(calculationResult: BatchCalculationResult): Empty
 }

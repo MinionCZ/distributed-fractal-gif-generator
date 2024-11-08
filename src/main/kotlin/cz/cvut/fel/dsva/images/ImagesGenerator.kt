@@ -3,16 +3,13 @@ package cz.cvut.fel.dsva.images
 import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.StreamingGifWriter
 import com.sksamuel.scrimage.pixels.Pixel
-import com.sksamuel.scrimage.pixels.PixelTools
 import com.sksamuel.scrimage.pixels.PixelTools.rgb
 import cz.cvut.fel.dsva.grpc.CalculationResult
 import cz.cvut.fel.dsva.grpc.JuliaSetProperties
 import cz.cvut.fel.dsva.input.GifProperties
 import cz.cvut.fel.dsva.input.ImageProperties
-import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.File
-import java.time.Duration
 import kotlin.math.log
 import kotlin.math.pow
 import cz.cvut.fel.dsva.grpc.ImageProperties as GrpcImageProperties
@@ -97,7 +94,6 @@ class ImagesGeneratorImpl : ImagesGenerator {
                     val b = calculatedPixels[i * 3 + 2].toInt() and 0xff
                     Pixel(x, y, rgb(r, g, b))
                 }
-
                 it.writeFrame(ImmutableImage.create(imageProperties.width, imageProperties.height, pixels))
             }
         }
