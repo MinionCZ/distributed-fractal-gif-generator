@@ -4,6 +4,7 @@ import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.BatchCalculationResult
 import cz.cvut.fel.dsva.grpc.JuliaSetCalculatorGrpcKt
+import cz.cvut.fel.dsva.grpc.NewWorkRequest
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
 import io.grpc.ManagedChannel
 import io.grpc.StatusException
@@ -25,9 +26,9 @@ class JuliaSetClient(private val channel: ManagedChannel) : Closeable {
         }
     }
 
-    suspend fun requestNewWorkload(currentMachine: WorkStationConfig): BatchCalculationRequest {
+    suspend fun requestNewWorkload(newWorkRequest: NewWorkRequest): BatchCalculationRequest {
         try {
-            return stub.requestNewWork(currentMachine.toWorkStation())
+            return stub.requestNewWork(newWorkRequest)
         } catch (e: StatusException) {
             //TODO add error handling
         }

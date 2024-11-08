@@ -11,6 +11,7 @@ import io.grpc.ManagedChannelBuilder
 import java.io.File
 import java.io.IOException
 import java.time.Duration
+import kotlin.math.max
 
 data class WorkStationConfig(
     val ip: String,
@@ -19,6 +20,9 @@ data class WorkStationConfig(
     val batchSize: Int,
     val otherWorkstations: List<RemoteWorkStation>,
 ) {
+
+    val vectorClock: VectorClock = VectorClock(this, otherWorkstations)
+
     fun toWorkStation(): WorkStation = workStation {
         ip = this.ip
         port = this.port
@@ -86,3 +90,4 @@ data class RemoteWorkStation(val ip: String, val port: Int) {
     fun createClient(): JuliaSetClient =
         JuliaSetClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build())
 }
+

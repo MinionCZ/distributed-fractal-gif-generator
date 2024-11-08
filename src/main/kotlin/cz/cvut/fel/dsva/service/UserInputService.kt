@@ -49,12 +49,13 @@ class UserInputServiceImpl(
     }
 
     private suspend fun sendRemoteJobs(jobs: List<RemoteTaskBatch>) {
+        workStationConfig.vectorClock.increment()
         for (job in jobs) {
             coroutineScope {
                 launch(Dispatchers.IO) {
                     job.worker.createClient().use {
                         try {
-                            it.sendCalculationRequest(job.toBatchCalculationRequest())
+                            it.sendCalculationRequest(job.toBatchCalculationRequest(workStationConfig.vectorClock.toGrpcFormat()))
                         } catch (e: IllegalArgumentException) {
                             systemJobStore.getSystemJob().deleteRemoteJob(job)
                         }

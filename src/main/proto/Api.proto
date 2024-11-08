@@ -4,7 +4,7 @@ option java_multiple_files = true;
 import public "google/protobuf/empty.proto";
 service JuliaSetCalculator {
   rpc requestCalculation (BatchCalculationRequest) returns (RequestCalculationRequestResult) {}
-  rpc requestNewWork (WorkStation) returns (BatchCalculationRequest) {}
+  rpc requestNewWork (NewWorkRequest) returns (BatchCalculationRequest) {}
   rpc submitRequestedWork(BatchCalculationResult) returns (google.protobuf.Empty) {}
 }
 
@@ -15,16 +15,19 @@ enum RequestCalculationRequestResponseStatus{
 
 message RequestCalculationRequestResult{
   RequestCalculationRequestResponseStatus status = 1;
+  repeated Clock vectorClock = 2;
 }
 
 
 message BatchCalculationResult{
   repeated CalculationResult results = 1;
   WorkStation worker = 2;
+  repeated Clock vectorClock = 3;
 }
 message BatchCalculationRequest{
   repeated CalculationRequest requests = 1;
   WorkStation requester = 2;
+  repeated Clock vectorClock = 3;
 }
 
 message CalculationRequest {
@@ -60,4 +63,14 @@ message CalculationResult{
 message WorkStation{
   string ip = 1;
   int32 port = 2;
+}
+
+message Clock{
+  WorkStation station = 1;
+  int64 timestamp = 2;
+}
+
+message NewWorkRequest{
+  WorkStation station = 1;
+  repeated Clock vectorClock = 2;
 }
