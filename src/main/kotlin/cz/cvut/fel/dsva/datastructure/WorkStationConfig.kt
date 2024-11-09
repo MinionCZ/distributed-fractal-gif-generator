@@ -93,3 +93,4 @@ data class RemoteWorkStation(val ip: String, val port: Int) {
         JuliaSetClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build())
 }
 
+fun WorkStation.toRemoteWorkStation(): RemoteWorkStation = RemoteWorkStation(this.ip, this.port)

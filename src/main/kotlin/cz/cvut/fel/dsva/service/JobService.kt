@@ -6,6 +6,7 @@ import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.RequestedTaskBatch
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.SystemJobStore
+import cz.cvut.fel.dsva.datastructure.toRemoteWorkStation
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.batchCalculationResult
 import cz.cvut.fel.dsva.grpc.calculationResult
@@ -83,7 +84,7 @@ class JobServiceImpl(
         workStationConfig.vectorClock.increment()
         logger.info("Request work from other stations started")
         for (remoteWorkStation in workStationConfig.otherWorkstations) {
-            logger.info("Requesting work from ${remoteWorkStation.workStation}")
+            logger.info("Requesting work from $remoteWorkStation")
             val response = remoteWorkStation.createClient().use {
                 try {
                     it.requestNewWorkload(newWorkRequest {
@@ -91,7 +92,7 @@ class JobServiceImpl(
                         station = workStationConfig.toWorkStation()
                     })
                 } catch (e: IllegalStateException) {
-                    logger.info("Unable to request work from ${remoteWorkStation.workStation}")
+                    logger.info("Unable to request work from $remoteWorkStation")
                     null
                 }
             }
@@ -110,14 +111,14 @@ class JobServiceImpl(
     private fun handleNewWorkloadResponse(batchCalculationRequest: BatchCalculationRequest): Boolean {
         workStationConfig.vectorClock.update(batchCalculationRequest.vectorClockList)
         if (batchCalculationRequest.requestsCount == 0) {
-            logger.info("No tasks received from machine ${batchCalculationRequest.requester}")
+            logger.info("No tasks received from machine ${batchCalculationRequest.requester.toRemoteWorkStation()}")
             return false
         }
         systemJobStore.getSystemJob().enqueueNewRequestedTask(
             RequestedTaskBatch(
                 batchCalculationRequest.requestsList,
                 LocalDateTime.now(),
-                RemoteWorkStation(batchCalculationRequest.requester.ip, batchCalculationRequest.requester.port)
+                batchCalculationRequest.requester.toRemoteWorkStation()
             )
         )
         workStationConfig.vectorClock.increment()
@@ -168,7 +169,7 @@ class JobServiceImpl(
         systemJobStore.getSystemJob().workRequester?.let { requester ->
             workStationConfig.vectorClock.increment()
             val resultList = systemJobStore.getSystemJob().getAndClearCalculatedImages()
-            logger.info("Trying to send calculation results to starting point of this calculation ${systemJobStore.getSystemJob().workRequester}")
+            logger.info("Trying to send calculation results to starting point of this calculation $requester")
             requester.createClient().use {
                 it.sendCompletedCalculation(batchCalculationResult {
                     worker = workStationConfig.toWorkStation()

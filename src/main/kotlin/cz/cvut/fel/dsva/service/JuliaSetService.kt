@@ -6,6 +6,7 @@ import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.Job
 import cz.cvut.fel.dsva.datastructure.SystemJobStore
+import cz.cvut.fel.dsva.datastructure.toRemoteWorkStation
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.BatchCalculationResult
 import cz.cvut.fel.dsva.grpc.NewWorkRequest
@@ -26,7 +27,7 @@ class JuliaSetServiceImpl(
 
     override suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult {
         this.workStationConfig.vectorClock.update(request.vectorClockList)
-        logger.info("Handling request calculation from remote machine ${request.requester}")
+        logger.info("Handling request calculation from remote machine ${request.requester.toRemoteWorkStation()}")
         workStationConfig.vectorClock.increment()
         return if (systemJobStore.isSystemJobPresent()) {
             logger.info("Machine is already computing")
@@ -63,7 +64,7 @@ class JuliaSetServiceImpl(
                 vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
                 requester = workStationConfig.toWorkStation()
             }.also {
-                logger.info("Job is done on this machine or there are not enough tasks to calculate, returning empty list of requests to ${newWorkRequest.station}")
+                logger.info("Job is done on this machine or there are not enough tasks to calculate, returning empty list of requests to ${newWorkRequest.station.toRemoteWorkStation()}")
             }
         }
     }
