@@ -6,6 +6,8 @@ val grpcKotlinStubVersion: String by settings
 val coroutinesVersion: String by settings
 val jacksonVersion: String by settings
 val kotlinLoggingVersion: String by settings
+val slf4jVersion: String by settings
+val logbackVersion: String by settings
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
 }
@@ -30,6 +32,9 @@ dependencyResolutionManagement {
         }
         create("loggingLibs") {
             library("kotlinLogging", "io.github.oshai:kotlin-logging-jvm:$kotlinLoggingVersion")
+            library("slf4j", "org.slf4j:slf4j-api:$slf4jVersion")
+            library("logbackCore", "ch.qos.logback:logback-core:$logbackVersion")
+            library("logbackClassic", "ch.qos.logback:logback-classic:$logbackVersion")
         }
     }
 }

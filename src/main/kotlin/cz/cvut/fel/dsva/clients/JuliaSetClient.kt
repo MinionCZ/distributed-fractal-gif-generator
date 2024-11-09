@@ -1,6 +1,5 @@
 package cz.cvut.fel.dsva.clients
 
-import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.BatchCalculationResult
 import cz.cvut.fel.dsva.grpc.JuliaSetCalculatorGrpcKt

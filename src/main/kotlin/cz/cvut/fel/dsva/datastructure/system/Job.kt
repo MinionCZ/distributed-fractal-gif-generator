@@ -1,6 +1,5 @@
 package cz.cvut.fel.dsva.datastructure.system
 
-import com.google.rpc.Help.Link
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
 import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
@@ -96,6 +95,17 @@ class Job(
         }
     }
 
+    fun isLocalCalculationCompleted(): Boolean {
+        synchronized(this) {
+            return tasks.isEmpty()
+        }
+    }
+
+    fun addNewTasks(tasks: List<CalculationRequest>) {
+        synchronized(this) {
+            this.tasks.addAll(tasks)
+        }
+    }
 
     data class ComputationStatus(val tasksCalculated: Boolean, val remoteTasksCalculated: Boolean)
 }
@@ -124,7 +134,6 @@ class SystemJobStoreImpl(private val workStationConfig: WorkStationConfig) : Sys
                 error("System job is already persisted")
             }
             this.job = job
-            workStationConfig.vectorClock.increment()
         }
     }
 

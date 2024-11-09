@@ -22,6 +22,9 @@ dependencies {
     implementation(libs.jacksonDateTime)
     implementation(libs.grpcServer)
     implementation(loggingLibs.kotlinLogging)
+    implementation(loggingLibs.slf4j)
+    implementation(loggingLibs.logbackCore)
+    implementation(loggingLibs.logbackClassic)
     testImplementation(kotlin("test"))
 }
 
