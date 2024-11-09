@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "2.0.20"
     alias(libs.plugins.protobuf)
+    alias(libs.plugins.fatjar)
 }
 
 group = "cz.cvut.fel.dsva"
@@ -59,4 +60,21 @@ protobuf {
             }
         }
     }
+}
+
+tasks.shadowJar {
+    manifest {
+        attributes["Main-Class"] = "cz.cvut.fel.dsva.MainKt"
+    }
+    archiveBaseName = "dsva-semestral"
+    archiveClassifier = ""
+    archiveVersion = ""
+}
+
+tasks.build {
+    dependsOn(tasks.shadowJar)
+}
+
+tasks.jar {
+    enabled = false
 }
