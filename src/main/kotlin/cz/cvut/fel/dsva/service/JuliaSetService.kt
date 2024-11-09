@@ -11,6 +11,7 @@ import cz.cvut.fel.dsva.grpc.BatchCalculationResult
 import cz.cvut.fel.dsva.grpc.NewWorkRequest
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResponseStatus
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
+import cz.cvut.fel.dsva.grpc.batchCalculationRequest
 import cz.cvut.fel.dsva.grpc.requestCalculationRequestResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,12 +52,20 @@ class JuliaSetServiceImpl(
         return try {
             val remoteWorkStation = this.workStationConfig.findRemoteWorkStation(newWorkRequest.station)
             workStationConfig.vectorClock.increment()
-            systemJobStore
-                .getSystemJob()
-                .createRemoteJob(this.workStationConfig.batchSize, remoteWorkStation)
-                .toBatchCalculationRequest(workStationConfig).also {
-                    logger.info("Successfully created and sent remote job with ids ${it.requestsList.map { it.imageProperties.id }}")
+            if (systemJobStore.isSystemJobPresent()) {
+                systemJobStore
+                    .getSystemJob()
+                    .createRemoteJob(this.workStationConfig.batchSize, remoteWorkStation)
+                    .toBatchCalculationRequest(workStationConfig).also {
+                        logger.info("Successfully created and sent remote job with ids ${it.requestsList.map { it.imageProperties.id }}")
+                    }
+            } else {
+                batchCalculationRequest {
+                    vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+                    requester = workStationConfig.toWorkStation()
                 }
+            }
+
         } catch (e: IllegalStateException) {
             logger.error("Fatal error has occurred during handing of new work ${e.message}")
             throw e
