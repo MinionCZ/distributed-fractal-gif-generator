@@ -13,6 +13,7 @@ import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResponseStatus
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
 import cz.cvut.fel.dsva.grpc.batchCalculationRequest
 import cz.cvut.fel.dsva.grpc.requestCalculationRequestResult
+import kotlin.math.log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -52,23 +53,19 @@ class JuliaSetServiceImpl(
         return try {
             val remoteWorkStation = this.workStationConfig.findRemoteWorkStation(newWorkRequest.station)
             workStationConfig.vectorClock.increment()
-            if (systemJobStore.isSystemJobPresent()) {
-                systemJobStore
-                    .getSystemJob()
-                    .createRemoteJob(this.workStationConfig.batchSize, remoteWorkStation)
-                    .toBatchCalculationRequest(workStationConfig).also {
-                        logger.info("Successfully created and sent remote job with ids ${it.requestsList.map { it.imageProperties.id }}")
-                    }
-            } else {
-                batchCalculationRequest {
-                    vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
-                    requester = workStationConfig.toWorkStation()
+            systemJobStore
+                .getSystemJob()
+                .createRemoteJob(this.workStationConfig.batchSize, remoteWorkStation)
+                .toBatchCalculationRequest(workStationConfig).also {
+                    logger.info("Successfully created and sent remote job with ids ${it.requestsList.map { it.imageProperties.id }}")
                 }
-            }
-
         } catch (e: IllegalStateException) {
-            logger.error("Fatal error has occurred during handing of new work ${e.message}")
-            throw e
+            batchCalculationRequest {
+                vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+                requester = workStationConfig.toWorkStation()
+            }.also {
+                logger.info("Job is done on this machine or there are not enough tasks to calculate, returning empty list of requests to ${newWorkRequest.station}")
+            }
         }
     }
 
