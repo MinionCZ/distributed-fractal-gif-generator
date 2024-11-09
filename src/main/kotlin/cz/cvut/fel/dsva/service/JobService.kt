@@ -2,11 +2,17 @@ package cz.cvut.fel.dsva.service
 
 import com.google.protobuf.ByteString
 import cz.cvut.fel.dsva.LoggerWrapper
+import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
+import cz.cvut.fel.dsva.datastructure.RequestedTaskBatch
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
+import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
+import cz.cvut.fel.dsva.grpc.batchCalculationResult
 import cz.cvut.fel.dsva.grpc.calculationResult
+import cz.cvut.fel.dsva.grpc.newWorkRequest
 import cz.cvut.fel.dsva.images.ImagesGenerator
 import java.time.Duration
+import java.time.LocalDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -58,13 +64,101 @@ class JobServiceImpl(
                         }
                     }
                 }
+                if (status.requestedTasksCalculated) {
+                    requestForWorkOthers()
+                }
                 if (!status.tasksCalculated || !status.remoteTasksCalculated) {
                     Thread.sleep(DELAY.toMillis())
                 }
-            } while (!status.tasksCalculated || !status.remoteTasksCalculated)
+            } while (!systemJobStore.getSystemJob().checkIfWorkIsDone().allCalculated())
             workStationConfig.vectorClock.increment()
             logger.info("Calculation has finished")
         }
+    }
+
+    private suspend fun requestForWorkOthers() {
+        workStationConfig.vectorClock.increment()
+        logger.info("Request work from other stations started")
+        for (remoteWorkStation in workStationConfig.otherWorkstations) {
+            logger.info("Requesting work from ${remoteWorkStation.workStation}")
+            val response = remoteWorkStation.createClient().use {
+                try {
+                    it.requestNewWorkload(newWorkRequest {
+                        vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+                        station = workStationConfig.toWorkStation()
+                    })
+                } catch (e: IllegalStateException) {
+                    logger.info("Unable to request work from ${remoteWorkStation.workStation}")
+                    null
+                }
+            }
+            if (response != null && handleNewWorkloadResponse(response)) {
+                break
+            }
+        }
+        coroutineScope {
+            launch(Dispatchers.IO) {
+                calculatedRequestedWork()
+                sendCalculationRequestResult()
+            }
+        }
+    }
+
+    private fun handleNewWorkloadResponse(batchCalculationRequest: BatchCalculationRequest): Boolean {
+        workStationConfig.vectorClock.update(batchCalculationRequest.vectorClockList)
+        if (batchCalculationRequest.requestsCount == 0) {
+            logger.info("No tasks received from machine ${batchCalculationRequest.requester}")
+            return false
+        }
+        systemJobStore.getSystemJob().enqueueNewRequestedTask(
+            RequestedTaskBatch(
+                batchCalculationRequest.requestsList,
+                LocalDateTime.now(),
+                RemoteWorkStation(batchCalculationRequest.requester.ip, batchCalculationRequest.requester.port)
+            )
+        )
+        workStationConfig.vectorClock.increment()
+        logger.info("Enqueued new request for remote job calculation")
+        return true
+    }
+
+
+    private fun calculatedRequestedWork() {
+        workStationConfig.vectorClock.increment()
+        logger.info("Starting calculation of requested work")
+        while (true) {
+            val task = systemJobStore.getSystemJob().getRequestedTask()?.popTask() ?: break
+            val result = imagesGenerator.generateJuliaSetImage(task.imageProperties, task.juliaSetProperties)
+            systemJobStore.getSystemJob().getRequestedTask()?.addCalculationResult(calculationResult {
+                imageProperties = task.imageProperties
+                pixels = ByteString.copyFrom(result)
+            })
+        }
+        logger.info("Finished calculation of requested work")
+    }
+
+    private suspend fun sendCalculationRequestResult() {
+        workStationConfig.vectorClock.increment()
+        logger.info(
+            "Starting sending calculation result to ${
+                systemJobStore.getSystemJob().getRequestedTask()?.requester
+            }"
+        )
+        systemJobStore.getSystemJob().getRequestedTask()?.let { task ->
+            task.requester.createClient().use {
+                try {
+                    it.sendCompletedCalculation(batchCalculationResult {
+                        worker = workStationConfig.toWorkStation()
+                        vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+                        results.addAll(task.getAllResults())
+                    })
+                    logger.info("Successfully sent calculation result to ${task.requester}")
+                } catch (e: IllegalStateException) {
+                    logger.info("Unable to send calculation result to ${task.requester}")
+                }
+            }
+        }
+        systemJobStore.getSystemJob().clearRequestedTask()
     }
 
     private companion object {
