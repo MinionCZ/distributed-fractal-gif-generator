@@ -8,7 +8,7 @@ import kotlin.math.max
 
 class VectorClock(
     private val currentWorkStation: WorkStationConfig,
-    remoteWorkStations: Collection<RemoteWorkStation>
+    private val remoteWorkStations: List<RemoteWorkStation>
 ) {
     private val vectorClock: MutableMap<WorkStation, Long> = LinkedHashMap<WorkStation, Long>()
 
@@ -44,5 +44,27 @@ class VectorClock(
             }
             increment()
         }
+    }
+
+    fun toLogFormat(): String = synchronized(this) {
+        val sortedClock = this.vectorClock.toList().sortedWith(compareBy({ it.first.ip }, { it.first.port }))
+        val builder = StringBuilder()
+        sortedClock.forEachIndexed { index, pair ->
+            if (pair.first == this.currentWorkStation.toWorkStation()) {
+                builder.append("${CURRENT_MACHINE_COLOR_START}${pair.second}$RESET_COLOR")
+            } else {
+                builder.append(pair.second)
+            }
+            if (index != sortedClock.size - 1) {
+                builder.append(" ")
+            }
+        }
+        builder.toString()
+    }
+
+
+    private companion object {
+        private const val CURRENT_MACHINE_COLOR_START = "\u001b[32m"
+        private const val RESET_COLOR = "\u001b[0m"
     }
 }

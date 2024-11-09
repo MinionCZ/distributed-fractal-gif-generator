@@ -5,6 +5,7 @@ val grpcVersion: String by settings
 val grpcKotlinStubVersion: String by settings
 val coroutinesVersion: String by settings
 val jacksonVersion: String by settings
+val kotlinLoggingVersion: String by settings
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
 }
@@ -26,6 +27,9 @@ dependencyResolutionManagement {
             library("jacksonKotlin", "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
             library("jacksonDateTime", "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
             library("grpcServer", "io.grpc:grpc-netty:$grpcVersion")
+        }
+        create("loggingLibs") {
+            library("kotlinLogging", "io.github.oshai:kotlin-logging-jvm:$kotlinLoggingVersion")
         }
     }
 }
