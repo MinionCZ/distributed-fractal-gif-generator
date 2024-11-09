@@ -5,7 +5,7 @@ import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.RequestedTaskBatch
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
+import cz.cvut.fel.dsva.datastructure.SystemJobStore
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.batchCalculationResult
 import cz.cvut.fel.dsva.grpc.calculationResult
@@ -13,7 +13,6 @@ import cz.cvut.fel.dsva.grpc.newWorkRequest
 import cz.cvut.fel.dsva.images.ImagesGenerator
 import java.time.Duration
 import java.time.LocalDateTime
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch

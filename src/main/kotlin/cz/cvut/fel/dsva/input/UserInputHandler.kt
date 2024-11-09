@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.databind.ObjectMapper
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.datastructure.system.Job
-import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
+import cz.cvut.fel.dsva.datastructure.Job
+import cz.cvut.fel.dsva.datastructure.SystemJobStore
 import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.calculationRequest
 import cz.cvut.fel.dsva.grpc.complexNumber

@@ -3,7 +3,7 @@ package cz.cvut.fel.dsva.service
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
+import cz.cvut.fel.dsva.datastructure.SystemJobStore
 import cz.cvut.fel.dsva.images.ImagesGenerator
 import cz.cvut.fel.dsva.input.UserInputHolder
 import kotlinx.coroutines.CoroutineScope

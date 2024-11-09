@@ -1,12 +1,7 @@
-package cz.cvut.fel.dsva.datastructure.system
+package cz.cvut.fel.dsva.datastructure
 
-import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
-import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
-import cz.cvut.fel.dsva.datastructure.RequestedTaskBatch
-import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationResult
-import cz.cvut.fel.dsva.grpc.WorkStation
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.LinkedList

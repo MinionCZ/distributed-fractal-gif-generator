@@ -5,7 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import cz.cvut.fel.dsva.api.JuliaSetApiHandler
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.datastructure.system.SystemJobStoreImpl
+import cz.cvut.fel.dsva.datastructure.SystemJobStoreImpl
 import cz.cvut.fel.dsva.images.ImagesGeneratorImpl
 import cz.cvut.fel.dsva.input.UserInputHandler
 import cz.cvut.fel.dsva.service.JobServiceImpl
@@ -13,7 +13,6 @@ import cz.cvut.fel.dsva.service.JuliaSetServiceImpl
 import cz.cvut.fel.dsva.service.UserInputServiceImpl
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.ServerBuilder
-import kotlin.math.log
 import kotlinx.coroutines.runBlocking
 
 private val logger = KotlinLogging.logger {}

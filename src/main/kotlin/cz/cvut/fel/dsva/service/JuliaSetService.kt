@@ -4,8 +4,8 @@ import com.google.protobuf.Empty
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.datastructure.system.Job
-import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
+import cz.cvut.fel.dsva.datastructure.Job
+import cz.cvut.fel.dsva.datastructure.SystemJobStore
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.BatchCalculationResult
 import cz.cvut.fel.dsva.grpc.NewWorkRequest
@@ -13,7 +13,6 @@ import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResponseStatus
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
 import cz.cvut.fel.dsva.grpc.batchCalculationRequest
 import cz.cvut.fel.dsva.grpc.requestCalculationRequestResult
-import kotlin.math.log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
