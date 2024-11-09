@@ -6,7 +6,6 @@ import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
 import cz.cvut.fel.dsva.images.ImagesGenerator
 import cz.cvut.fel.dsva.input.UserInputHolder
-import kotlin.math.log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -31,12 +30,17 @@ class UserInputServiceImpl(
                 sendRemoteJobs(remoteJobs)
                 jobService.calculateTasks()
                 jobService.awaitCalculationFinish()
+                workStationConfig.vectorClock.increment()
+                logger.info("Starting gif writing")
                 imagesGenerator.createGif(
                     userInputHolder.gifProperties,
                     userInputHolder.imageProperties,
                     systemJobStore.getSystemJob().calculatedImagesCopy
                 )
+                workStationConfig.vectorClock.increment()
+                logger.info("Done writing of gif")
                 systemJobStore.removeSystemJob()
+                workStationConfig.vectorClock.increment()
                 logger.info("Done job")
             }
         }
@@ -63,7 +67,7 @@ class UserInputServiceImpl(
                         try {
                             it.sendCalculationRequest(job.toBatchCalculationRequest(workStationConfig.vectorClock.toGrpcFormat()))
                             logger.info("Successfully sent job to ${job.worker.workStation}")
-                        } catch (e: IllegalArgumentException) {
+                        } catch (e: IllegalStateException) {
                             systemJobStore.getSystemJob().deleteRemoteJob(job)
                             logger.info("Failed to send job to ${job.worker.workStation}")
                         }

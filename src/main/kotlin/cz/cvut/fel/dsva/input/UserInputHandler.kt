@@ -48,7 +48,6 @@ class UserInputHandler(
             parsedInput.validate()
             validateWorkstationState()
             enqueueNewUserJob(parsedInput)
-            println("New job has started")
             userInputService.startNewDistributedJob(parsedInput)
         } catch (e: IllegalStateException) {
             System.err.println(e.message)

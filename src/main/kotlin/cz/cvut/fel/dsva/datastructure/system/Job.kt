@@ -140,7 +140,6 @@ class SystemJobStoreImpl(private val workStationConfig: WorkStationConfig) : Sys
     override fun removeSystemJob() {
         synchronized(this) {
             job = null
-            workStationConfig.vectorClock.increment()
         }
     }
 }

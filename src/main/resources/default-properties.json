@@ -3,5 +3,10 @@
   "port": 8990,
   "maxCalculationDuration": "PT30S",
   "batchSize": 5,
-  "otherWorkstations": []
+  "otherWorkstations": [
+    {
+      "ip": "127.0.0.1",
+      "port": 14000
+    }
+  ]
 }
