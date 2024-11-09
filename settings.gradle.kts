@@ -8,6 +8,7 @@ val jacksonVersion: String by settings
 val kotlinLoggingVersion: String by settings
 val slf4jVersion: String by settings
 val logbackVersion: String by settings
+val shadowVersion: String by settings
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
 }
@@ -29,6 +30,7 @@ dependencyResolutionManagement {
             library("jacksonKotlin", "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
             library("jacksonDateTime", "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
             library("grpcServer", "io.grpc:grpc-netty:$grpcVersion")
+            plugin("fatjar", "com.gradleup.shadow").version(shadowVersion)
         }
         create("loggingLibs") {
             library("kotlinLogging", "io.github.oshai:kotlin-logging-jvm:$kotlinLoggingVersion")
