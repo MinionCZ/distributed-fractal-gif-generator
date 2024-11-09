@@ -8,6 +8,7 @@ build:
     - .m2
   script:
     - ls -la
+    - java --version
     - ./gradlew clean build
   artifacts:
     paths:
