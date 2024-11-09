@@ -2,6 +2,7 @@ package cz.cvut.fel.dsva.input
 
 import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.databind.ObjectMapper
+import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.system.Job
 import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
@@ -28,6 +29,7 @@ class UserInputHandler(
     private val objectMapper: ObjectMapper,
     private val userInputService: UserInputService,
 ) {
+    private val logger = LoggerWrapper(UserInputHandler::class, currentWorkStationConfig)
     suspend fun startInputHandler() {
         coroutineScope {
             launch(Dispatchers.IO) {
@@ -51,12 +53,16 @@ class UserInputHandler(
             userInputService.startNewDistributedJob(parsedInput)
         } catch (e: IllegalStateException) {
             System.err.println(e.message)
+            logger.info(e.message ?: "Error occurred during reading of user input")
         } catch (e: IOException) {
             System.err.println("Error occurred during reading of file $line")
+            logger.info("Error occurred during reading of file $line")
         } catch (e: JacksonException) {
             System.err.println("Error occurred during parsing of file $line")
+            logger.info("Error occurred during parsing of file $line")
         } catch (e: IllegalArgumentException) {
             System.err.println(e.message)
+            logger.info(e.message ?: "Unexpected error during parsing of file $line")
         }
     }
 

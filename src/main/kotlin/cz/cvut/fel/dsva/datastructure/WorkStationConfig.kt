@@ -4,9 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
+import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.clients.JuliaSetClient
 import cz.cvut.fel.dsva.grpc.WorkStation
 import cz.cvut.fel.dsva.grpc.workStation
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.ManagedChannelBuilder
 import java.io.File
 import java.io.IOException
@@ -20,7 +22,6 @@ data class WorkStationConfig(
     val batchSize: Int,
     val otherWorkstations: List<RemoteWorkStation>,
 ) {
-
     val vectorClock: VectorClock = VectorClock(this, otherWorkstations)
 
     fun toWorkStation(): WorkStation = workStation {
@@ -34,21 +35,22 @@ data class WorkStationConfig(
 
 
     companion object {
+        private val logger = KotlinLogging.logger { }
         fun fromPropertiesFile(propertiesFileName: String?, objectMapper: ObjectMapper): WorkStationConfig {
             val properties = if (propertiesFileName != null) {
-                println("Loading properties from file $propertiesFileName")
+                logger.info { "Loading properties from file $propertiesFileName" }
                 propertiesFileName
             } else {
-                println("Loading properties from default file $DEFAULT_PROPERTIES_FILE_NAME")
+                logger.info { "Loading properties from default file $DEFAULT_PROPERTIES_FILE_NAME" }
                 DEFAULT_PROPERTIES_FILE_NAME
             }
             try {
                 val readFile = readFile(properties)
                 return deserializeConfig(readFile, objectMapper)
             } catch (e: IOException) {
-                System.err.println("Error occurred while reading properties file $propertiesFileName")
+                logger.error { ("Error occurred while reading properties file $propertiesFileName") }
             } catch (e: IllegalStateException) {
-                System.err.println(e.message)
+                logger.error { e.message }
             }
             error("Fatal error occurred while reading properties file $properties")
         }
