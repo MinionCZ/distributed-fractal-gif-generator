@@ -13,6 +13,7 @@ import cz.cvut.fel.dsva.grpc.newWorkRequest
 import cz.cvut.fel.dsva.images.ImagesGenerator
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -64,13 +65,16 @@ class JobServiceImpl(
                         }
                     }
                 }
+                if (status.timeToReturnRequestedJob()) {
+                    returnCalculationResult()
+                }
                 if (status.requestedTasksCalculated) {
                     requestForWorkOthers()
                 }
                 if (!status.tasksCalculated || !status.remoteTasksCalculated) {
                     Thread.sleep(DELAY.toMillis())
                 }
-            } while (!systemJobStore.getSystemJob().checkIfWorkIsDone().allCalculated())
+            } while (!systemJobStore.getSystemJob().checkIfWorkIsDone().addDone())
             workStationConfig.vectorClock.increment()
             logger.info("Calculation has finished")
         }
@@ -159,6 +163,22 @@ class JobServiceImpl(
             }
         }
         systemJobStore.getSystemJob().clearRequestedTask()
+    }
+
+    private suspend fun returnCalculationResult() {
+        systemJobStore.getSystemJob().workRequester?.let { requester ->
+            workStationConfig.vectorClock.increment()
+            val resultList = systemJobStore.getSystemJob().getAndClearCalculatedImages()
+            logger.info("Trying to send calculation results to starting point of this calculation ${systemJobStore.getSystemJob().workRequester}")
+            requester.createClient().use {
+                it.sendCompletedCalculation(batchCalculationResult {
+                    worker = workStationConfig.toWorkStation()
+                    vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+                    results.addAll(resultList)
+                })
+                logger.info("Successfully sent result to requester $requester")
+            }
+        }
     }
 
     private companion object {

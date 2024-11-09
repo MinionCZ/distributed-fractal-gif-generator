@@ -83,7 +83,7 @@ class UserInputHandler(
 
     private fun enqueueNewUserJob(userInputHolder: UserInputHolder) {
         val newJob = Job(
-            workRequester = this.currentWorkStationConfig.toWorkStation(),
+            workRequester = null,
             createTasksFromUserInput(userInputHolder)
         )
         systemJobStore.persistNewSystemJob(newJob)
