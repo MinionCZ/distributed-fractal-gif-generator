@@ -1,0 +1,13 @@
+build:
+  stage: build
+  image: openjdk:21-jdk
+  cache:
+    paths:
+    - .gradle/wrapper
+    - .gradle/caches
+    - .m2
+  script:
+    - ./gradlew clean build
+  artifacts:
+    paths:
+      - ./build/libs/*.jar
