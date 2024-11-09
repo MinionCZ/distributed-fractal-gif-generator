@@ -2,18 +2,20 @@ package cz.cvut.fel.dsva.service
 
 import com.google.protobuf.Empty
 import cz.cvut.fel.dsva.LoggerWrapper
+import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.datastructure.system.Job
-import cz.cvut.fel.dsva.datastructure.system.SystemJobStore
+import cz.cvut.fel.dsva.datastructure.Job
+import cz.cvut.fel.dsva.datastructure.SystemJobStore
+import cz.cvut.fel.dsva.datastructure.toRemoteWorkStation
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.BatchCalculationResult
 import cz.cvut.fel.dsva.grpc.NewWorkRequest
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResponseStatus
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
+import cz.cvut.fel.dsva.grpc.batchCalculationRequest
 import cz.cvut.fel.dsva.grpc.requestCalculationRequestResult
-import kotlin.math.log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 class JuliaSetServiceImpl(
@@ -25,7 +27,7 @@ class JuliaSetServiceImpl(
 
     override suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult {
         this.workStationConfig.vectorClock.update(request.vectorClockList)
-        logger.info("Handling request calculation from remote machine ${request.requester}")
+        logger.info("Handling request calculation from remote machine ${request.requester.toRemoteWorkStation()}")
         workStationConfig.vectorClock.increment()
         return if (systemJobStore.isSystemJobPresent()) {
             logger.info("Machine is already computing")
@@ -34,10 +36,10 @@ class JuliaSetServiceImpl(
                 vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
             }
         } else {
-            val newJob = Job(request.requester, request.requestsList)
+            val newJob = Job(RemoteWorkStation(request.requester.ip, request.requester.port), request.requestsList)
             systemJobStore.persistNewSystemJob(job = newJob)
+            logger.info("Successfully started new computation for images with ids ${request.requestsList.map { it.imageProperties.id }}")
             runCalculationOnBackground()
-            logger.info("Successfully started new computation")
             requestCalculationRequestResult {
                 status = RequestCalculationRequestResponseStatus.OK
                 vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
@@ -54,12 +56,16 @@ class JuliaSetServiceImpl(
             systemJobStore
                 .getSystemJob()
                 .createRemoteJob(this.workStationConfig.batchSize, remoteWorkStation)
-                .toBatchCalculationRequest(this.workStationConfig.vectorClock.toGrpcFormat()).also {
-                    logger.info("Successfully created and sent remote job")
+                .toBatchCalculationRequest(workStationConfig).also {
+                    logger.info("Successfully created and sent remote job with ids ${it.requestsList.map { it.imageProperties.id }}")
                 }
         } catch (e: IllegalStateException) {
-            logger.error("Fatal error has occurred during handing of new work ${e.message}")
-            throw e
+            batchCalculationRequest {
+                vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+                requester = workStationConfig.toWorkStation()
+            }.also {
+                logger.info("Job is done on this machine or there are not enough tasks to calculate, returning empty list of requests to ${newWorkRequest.station.toRemoteWorkStation()}")
+            }
         }
     }
 
@@ -69,6 +75,7 @@ class JuliaSetServiceImpl(
         try {
             val remoteWorker = workStationConfig.findRemoteWorkStation(calculationResult.worker)
             systemJobStore.getSystemJob().addCalculationResults(calculationResult.resultsList, remoteWorker)
+            logger.info("Added calculation results from remote job from machine $remoteWorker images with ids ${calculationResult.resultsList.map { it.imageProperties.id }}")
         } catch (e: IllegalStateException) {
             logger.error("Fatal error has occurred during handing of new work ${e.message}")
             throw e
@@ -77,17 +84,15 @@ class JuliaSetServiceImpl(
     }
 
 
-    private suspend fun runCalculationOnBackground() {
-        coroutineScope {
-            launch(Dispatchers.Default) {
-                jobService.calculateTasks()
-                jobService.awaitCalculationFinish()
-                workStationConfig.vectorClock.increment()
-                logger.info("Calculation finished, removing system job")
-                systemJobStore.removeSystemJob()
-                workStationConfig.vectorClock.increment()
-                logger.info("Ready to accept new work")
-            }
+    private fun runCalculationOnBackground() {
+        CoroutineScope(Dispatchers.Default).launch {
+            jobService.calculateTasks()
+            jobService.awaitCalculationFinish()
+            workStationConfig.vectorClock.increment()
+            logger.info("Calculation finished, removing system job")
+            systemJobStore.removeSystemJob()
+            workStationConfig.vectorClock.increment()
+            logger.info("Ready to accept new work")
         }
     }
 }

@@ -1,18 +1,13 @@
-package cz.cvut.fel.dsva.datastructure.system
+package cz.cvut.fel.dsva.datastructure
 
-import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
-import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
-import cz.cvut.fel.dsva.datastructure.RequestedTaskBatch
-import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationResult
-import cz.cvut.fel.dsva.grpc.WorkStation
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.LinkedList
 
 class Job(
-    val workRequester: WorkStation,
+    val workRequester: RemoteWorkStation?,
     tasks: List<CalculationRequest>,
 ) {
     private val remoteTasks: MutableList<RemoteTaskBatch> = LinkedList()
@@ -54,9 +49,18 @@ class Job(
 
 
     fun addCalculationResults(calculationResults: List<CalculationResult>, workStation: RemoteWorkStation) {
+        fun compareCalculationResultsWithTask(
+            calculationResultsImageIds: Set<Int>,
+            remoteTask: RemoteTaskBatch
+        ): Boolean {
+            val remoteTaskImageIds = remoteTask.tasks.map { it.imageProperties.id }.toSet()
+            return (calculationResultsImageIds == remoteTaskImageIds)
+        }
+
         synchronized(this) {
+            val calculationResultsIds = calculationResults.map { it.imageProperties.id }.toSet()
             val removed = remoteTasks.removeIf {
-                it.worker == workStation
+                it.worker == workStation && compareCalculationResultsWithTask(calculationResultsIds, it)
             }
             check(removed) {
                 "Unknown results from worker"
@@ -85,9 +89,11 @@ class Job(
     fun checkIfWorkIsDone(): ComputationStatus {
         synchronized(this) {
             val tasksCalculated = this.tasks.isEmpty()
-            val remoteTasksCalculated = tasks.isEmpty()
+            val remoteTasksCalculated = remoteTasks.isEmpty()
             val requestedTasksCalculated = this.requestedTask == null
-            return ComputationStatus(tasksCalculated, remoteTasksCalculated, requestedTasksCalculated)
+            val jobsReturned =
+                workRequester == null || (this.calculatedImages.isEmpty() && tasksCalculated && remoteTasksCalculated)
+            return ComputationStatus(tasksCalculated, remoteTasksCalculated, requestedTasksCalculated, jobsReturned)
         }
     }
 
@@ -95,18 +101,6 @@ class Job(
         synchronized(this) {
             val cutOffTime = LocalDateTime.now()
             return this.remoteTasks.filter { it.startTimestamp.plus(timeout) <= cutOffTime }
-        }
-    }
-
-    fun isLocalCalculationCompleted(): Boolean {
-        synchronized(this) {
-            return tasks.isEmpty()
-        }
-    }
-
-    fun addNewTasks(tasks: List<CalculationRequest>) {
-        synchronized(this) {
-            this.tasks.addAll(tasks)
         }
     }
 
@@ -129,12 +123,25 @@ class Job(
         }
     }
 
+    fun getAndClearCalculatedImages(): List<CalculationResult> {
+        synchronized(this) {
+            val result = this.calculatedImagesCopy
+            this.calculatedImages.clear()
+            return result
+        }
+    }
+
+
     data class ComputationStatus(
         val tasksCalculated: Boolean,
         val remoteTasksCalculated: Boolean,
-        val requestedTasksCalculated: Boolean
+        val requestedTasksCalculated: Boolean,
+        val resultsReturnedToJobRequester: Boolean,
     ) {
-        fun allCalculated(): Boolean = tasksCalculated && remoteTasksCalculated && requestedTasksCalculated
+        fun addDone(): Boolean =
+            tasksCalculated && remoteTasksCalculated && requestedTasksCalculated && resultsReturnedToJobRequester
+
+        fun timeToReturnRequestedJob(): Boolean = tasksCalculated && remoteTasksCalculated && requestedTasksCalculated
     }
 }
 

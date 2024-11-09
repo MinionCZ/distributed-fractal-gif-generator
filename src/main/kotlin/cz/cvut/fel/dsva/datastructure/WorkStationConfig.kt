@@ -25,8 +25,8 @@ data class WorkStationConfig(
     val vectorClock: VectorClock = VectorClock(this, otherWorkstations)
 
     fun toWorkStation(): WorkStation = workStation {
-        ip = this.ip
-        port = this.port
+        ip = this@WorkStationConfig.ip
+        port = this@WorkStationConfig.port
     }
 
     fun findRemoteWorkStation(workStation: WorkStation): RemoteWorkStation =
@@ -93,3 +93,4 @@ data class RemoteWorkStation(val ip: String, val port: Int) {
         JuliaSetClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build())
 }
 
+fun WorkStation.toRemoteWorkStation(): RemoteWorkStation = RemoteWorkStation(this.ip, this.port)

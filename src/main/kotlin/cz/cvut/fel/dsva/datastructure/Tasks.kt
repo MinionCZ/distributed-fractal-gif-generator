@@ -15,10 +15,10 @@ data class RemoteTaskBatch(
     val startTimestamp: LocalDateTime,
     val worker: RemoteWorkStation,
 ) {
-    fun toBatchCalculationRequest(clocks: Collection<Clock>): BatchCalculationRequest = batchCalculationRequest {
+    fun toBatchCalculationRequest(workStationConfig: WorkStationConfig): BatchCalculationRequest = batchCalculationRequest {
         requests.addAll(tasks)
-        requester = worker.workStation
-        vectorClock.addAll(clocks)
+        requester = workStationConfig.toWorkStation()
+        vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
     }
 }
 
