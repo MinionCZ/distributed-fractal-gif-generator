@@ -54,7 +54,7 @@ class JuliaSetServiceImpl(
             systemJobStore
                 .getSystemJob()
                 .createRemoteJob(this.workStationConfig.batchSize, remoteWorkStation)
-                .toBatchCalculationRequest(this.workStationConfig.vectorClock.toGrpcFormat()).also {
+                .toBatchCalculationRequest(workStationConfig).also {
                     logger.info("Successfully created and sent remote job")
                 }
         } catch (e: IllegalStateException) {

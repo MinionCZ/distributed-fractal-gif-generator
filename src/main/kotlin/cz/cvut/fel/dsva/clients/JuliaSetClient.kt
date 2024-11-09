@@ -21,6 +21,7 @@ class JuliaSetClient(private val channel: ManagedChannel) : Closeable {
         try {
             stub.submitRequestedWork(result)
         } catch (e: StatusException) {
+            println(e)
             error("Unable to contact remote machine")
         }
     }
@@ -29,6 +30,7 @@ class JuliaSetClient(private val channel: ManagedChannel) : Closeable {
         try {
             return stub.requestNewWork(newWorkRequest)
         } catch (e: StatusException) {
+            println(e)
             error("Unable to contact remote machine")
         }
     }
@@ -37,6 +39,7 @@ class JuliaSetClient(private val channel: ManagedChannel) : Closeable {
         try {
             return stub.requestCalculation(batchCalculationRequest)
         } catch (e: StatusException) {
+            println(e)
             error("Unable to contact remote machine")
         }
     }

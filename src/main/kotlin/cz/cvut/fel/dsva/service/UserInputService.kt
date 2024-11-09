@@ -65,7 +65,7 @@ class UserInputServiceImpl(
                     logger.info("Sending remote job to ${job.worker.workStation}")
                     job.worker.createClient().use {
                         try {
-                            it.sendCalculationRequest(job.toBatchCalculationRequest(workStationConfig.vectorClock.toGrpcFormat()))
+                            it.sendCalculationRequest(job.toBatchCalculationRequest(workStationConfig))
                             logger.info("Successfully sent job to ${job.worker.workStation}")
                         } catch (e: IllegalStateException) {
                             systemJobStore.getSystemJob().deleteRemoteJob(job)

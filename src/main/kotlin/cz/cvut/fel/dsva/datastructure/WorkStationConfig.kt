@@ -25,8 +25,8 @@ data class WorkStationConfig(
     val vectorClock: VectorClock = VectorClock(this, otherWorkstations)
 
     fun toWorkStation(): WorkStation = workStation {
-        ip = this.ip
-        port = this.port
+        ip = this@WorkStationConfig.ip
+        port = this@WorkStationConfig.port
     }
 
     fun findRemoteWorkStation(workStation: WorkStation): RemoteWorkStation =
