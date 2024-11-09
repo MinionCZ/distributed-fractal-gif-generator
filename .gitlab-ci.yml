@@ -6,8 +6,6 @@ build:
     - ./.gradle
     - .m2/repository
   script:
-    - ls -la
-    - java --version
     - ./gradlew clean build
   artifacts:
     paths:
