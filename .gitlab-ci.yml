@@ -3,9 +3,8 @@ build:
   image: openjdk:21-jdk
   cache:
     paths:
-    - .gradle/wrapper
-    - .gradle/caches
-    - .m2
+    - ./.gradle
+    - .m2/repository
   script:
     - ls -la
     - java --version
