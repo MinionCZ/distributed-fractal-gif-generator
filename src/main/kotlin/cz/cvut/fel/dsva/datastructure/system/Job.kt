@@ -2,6 +2,7 @@ package cz.cvut.fel.dsva.datastructure.system
 
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
 import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
+import cz.cvut.fel.dsva.datastructure.RequestedTaskBatch
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationResult
@@ -17,6 +18,7 @@ class Job(
     private val remoteTasks: MutableList<RemoteTaskBatch> = LinkedList()
     private val tasks = LinkedList(tasks)
     private val calculatedImages = LinkedList<CalculationResult>()
+    private var requestedTask: RequestedTaskBatch? = null
 
     val calculatedImagesCopy: List<CalculationResult>
         get() = LinkedList(this.calculatedImages)
@@ -84,7 +86,8 @@ class Job(
         synchronized(this) {
             val tasksCalculated = this.tasks.isEmpty()
             val remoteTasksCalculated = tasks.isEmpty()
-            return ComputationStatus(tasksCalculated, remoteTasksCalculated)
+            val requestedTasksCalculated = this.requestedTask == null
+            return ComputationStatus(tasksCalculated, remoteTasksCalculated, requestedTasksCalculated)
         }
     }
 
@@ -107,7 +110,32 @@ class Job(
         }
     }
 
-    data class ComputationStatus(val tasksCalculated: Boolean, val remoteTasksCalculated: Boolean)
+    fun enqueueNewRequestedTask(requestedTask: RequestedTaskBatch) {
+        synchronized(this) {
+            if (this.requestedTask != null) {
+                error("Requested task is already full")
+            }
+            this.requestedTask = requestedTask
+        }
+    }
+
+    fun getRequestedTask(): RequestedTaskBatch? = synchronized(this) {
+        this.requestedTask
+    }
+
+    fun clearRequestedTask() {
+        synchronized(this) {
+            this.requestedTask = null
+        }
+    }
+
+    data class ComputationStatus(
+        val tasksCalculated: Boolean,
+        val remoteTasksCalculated: Boolean,
+        val requestedTasksCalculated: Boolean
+    ) {
+        fun allCalculated(): Boolean = tasksCalculated && remoteTasksCalculated && requestedTasksCalculated
+    }
 }
 
 interface SystemJobStore {

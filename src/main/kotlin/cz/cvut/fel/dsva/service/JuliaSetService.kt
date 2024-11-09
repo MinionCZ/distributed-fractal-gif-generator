@@ -27,21 +27,15 @@ class JuliaSetServiceImpl(
         this.workStationConfig.vectorClock.update(request.vectorClockList)
         logger.info("Handling request calculation from remote machine ${request.requester}")
         workStationConfig.vectorClock.increment()
-        return if (!systemJobStore.getSystemJob().isLocalCalculationCompleted()) {
+        return if (systemJobStore.isSystemJobPresent()) {
             logger.info("Machine is already computing")
             requestCalculationRequestResult {
                 status = RequestCalculationRequestResponseStatus.ALREADY_IN_COMPUTATION
                 vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
             }
         } else {
-            synchronized(this) {
-                if (systemJobStore.isSystemJobPresent()) {
-                    systemJobStore.getSystemJob().addNewTasks(request.requestsList)
-                } else {
-                    val newJob = Job(request.requester, request.requestsList)
-                    systemJobStore.persistNewSystemJob(job = newJob)
-                }
-            }
+            val newJob = Job(request.requester, request.requestsList)
+            systemJobStore.persistNewSystemJob(job = newJob)
             runCalculationOnBackground()
             logger.info("Successfully started new computation")
             requestCalculationRequestResult {
@@ -88,6 +82,11 @@ class JuliaSetServiceImpl(
             launch(Dispatchers.Default) {
                 jobService.calculateTasks()
                 jobService.awaitCalculationFinish()
+                workStationConfig.vectorClock.increment()
+                logger.info("Calculation finished, removing system job")
+                systemJobStore.removeSystemJob()
+                workStationConfig.vectorClock.increment()
+                logger.info("Ready to accept new work")
             }
         }
     }
