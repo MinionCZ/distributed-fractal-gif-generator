@@ -5,6 +5,7 @@ import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.SystemJobStore
 import cz.cvut.fel.dsva.datastructure.toRemoteWorkStation
+import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResponseStatus
 import cz.cvut.fel.dsva.images.ImagesGenerator
 import cz.cvut.fel.dsva.input.UserInputHolder
 import kotlinx.coroutines.CoroutineScope
@@ -28,8 +29,7 @@ class UserInputServiceImpl(
         logger.info("Starting new distributed job")
         coroutineScope {
             launch(Dispatchers.Default) {
-                val remoteJobs = prepareRemoteJobs()
-                sendRemoteJobs(remoteJobs)
+                jobService.sendRemoteJobs(jobService.prepareRemoteJobs())
                 jobService.calculateTasks()
                 jobService.awaitCalculationFinish()
                 workStationConfig.vectorClock.increment()
@@ -44,36 +44,6 @@ class UserInputServiceImpl(
                 systemJobStore.removeSystemJob()
                 workStationConfig.vectorClock.increment()
                 logger.info("Done job")
-            }
-        }
-    }
-
-    private fun prepareRemoteJobs(): List<RemoteTaskBatch> {
-        val jobs = ArrayList<RemoteTaskBatch>()
-        for (remoteWorkStation in workStationConfig.otherWorkstations) {
-            val taskBatch = systemJobStore.getSystemJob()
-                .createRemoteJob(workStationConfig.batchSize, remoteWorkStation)
-            jobs.add(taskBatch)
-        }
-        return jobs
-    }
-
-    private fun sendRemoteJobs(jobs: List<RemoteTaskBatch>) {
-        workStationConfig.vectorClock.increment()
-        logger.info("Sending remote jobs")
-        for (job in jobs) {
-            CoroutineScope(Dispatchers.IO).launch {
-                logger.info("Sending remote job to ${job.worker.workStation.toRemoteWorkStation()}")
-                job.worker.createClient().use {
-                    try {
-                        val remoteJobBatch = job.toBatchCalculationRequest(workStationConfig)
-                        it.sendCalculationRequest(remoteJobBatch)
-                        logger.info("Successfully sent job to ${job.worker.workStation.toRemoteWorkStation()} with image payload ${remoteJobBatch.requestsList.map { it.imageProperties.id }}")
-                    } catch (e: IllegalStateException) {
-                        systemJobStore.getSystemJob().deleteRemoteJob(job)
-                        logger.info("Failed to send job to ${job.worker.workStation.toRemoteWorkStation()}")
-                    }
-                }
             }
         }
     }
