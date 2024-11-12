@@ -39,6 +39,7 @@ class JuliaSetServiceImpl(
             val newJob = Job(RemoteWorkStation(request.requester.ip, request.requester.port), request.requestsList)
             systemJobStore.persistNewSystemJob(job = newJob)
             logger.info("Successfully started new computation for images with ids ${request.requestsList.map { it.imageProperties.id }}")
+            jobService.sendRemoteJobs(jobService.prepareRemoteJobs())
             runCalculationOnBackground()
             requestCalculationRequestResult {
                 status = RequestCalculationRequestResponseStatus.OK
