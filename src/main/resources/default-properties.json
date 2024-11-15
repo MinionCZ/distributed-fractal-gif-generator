@@ -1,8 +1,9 @@
 {
   "ip": "127.0.0.1",
   "port": 8990,
-  "maxCalculationDuration": "PT30S",
+  "maxCalculationDuration": "PT300S",
   "batchSize": 50,
+  "maxRequestRepeat": 5,
   "otherWorkstations": [
     {
       "ip": "127.0.0.1",

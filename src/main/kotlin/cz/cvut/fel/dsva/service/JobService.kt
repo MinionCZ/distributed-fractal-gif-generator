@@ -16,6 +16,7 @@ import cz.cvut.fel.dsva.grpc.newWorkRequest
 import cz.cvut.fel.dsva.images.ImagesGenerator
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -61,7 +62,11 @@ class JobServiceImpl(
                 if (!status.remoteTasksCalculated) {
                     val timeOutedJobs =
                         systemJobStore.getSystemJob().getTimeOutedJobs(workStationConfig.maxCalculationDuration)
-                    systemJobStore.getSystemJob().deleteRemoteJobs(timeOutedJobs)
+                    if (timeOutedJobs.isNotEmpty()) {
+                        workStationConfig.vectorClock.increment()
+                        logger.info("Purging remote tasks because their calculation time has time outed $timeOutedJobs")
+                        systemJobStore.getSystemJob().deleteRemoteJobs(timeOutedJobs)
+                    }
                 }
                 if (!status.tasksCalculated) {
                     coroutineScope {
@@ -90,7 +95,7 @@ class JobServiceImpl(
         logger.info("Request work from other stations started")
         for (remoteWorkStation in workStationConfig.otherWorkstations) {
             logger.info("Requesting work from $remoteWorkStation")
-            val response = remoteWorkStation.createClient().use {
+            val response = remoteWorkStation.createClient(workStationConfig).use {
                 try {
                     it.requestNewWorkload(newWorkRequest {
                         vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
@@ -103,12 +108,6 @@ class JobServiceImpl(
             }
             if (response != null && handleNewWorkloadResponse(response)) {
                 break
-            }
-        }
-        coroutineScope {
-            launch(Dispatchers.IO) {
-                calculatedRequestedWork()
-                sendCalculationRequestResult()
             }
         }
     }
@@ -128,6 +127,10 @@ class JobServiceImpl(
         )
         workStationConfig.vectorClock.increment()
         logger.info("Enqueued new request for remote job calculation")
+        CoroutineScope(Dispatchers.IO).launch {
+            calculatedRequestedWork()
+            sendCalculationRequestResult()
+        }
         return true
     }
 
@@ -154,7 +157,7 @@ class JobServiceImpl(
             }"
         )
         systemJobStore.getSystemJob().getRequestedTask()?.let { task ->
-            task.requester.createClient().use {
+            task.requester.createClient(workStationConfig).use {
                 try {
                     it.sendCompletedCalculation(batchCalculationResult {
                         worker = workStationConfig.toWorkStation()
@@ -175,7 +178,7 @@ class JobServiceImpl(
             workStationConfig.vectorClock.increment()
             val resultList = systemJobStore.getSystemJob().getAndClearCalculatedImages()
             logger.info("Trying to send calculation results to starting point of this calculation $requester")
-            requester.createClient().use {
+            requester.createClient(workStationConfig).use {
                 it.sendCompletedCalculation(batchCalculationResult {
                     worker = workStationConfig.toWorkStation()
                     vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
@@ -192,7 +195,7 @@ class JobServiceImpl(
         for (job in jobs) {
             CoroutineScope(Dispatchers.IO).launch {
                 logger.info("Sending remote job to ${job.worker.workStation.toRemoteWorkStation()}")
-                job.worker.createClient().use {
+                job.worker.createClient(workStationConfig).use {
                     try {
                         val remoteJobBatch = job.toBatchCalculationRequest(workStationConfig)
                         val requestStatus = it.sendCalculationRequest(remoteJobBatch)

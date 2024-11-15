@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
-import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.clients.JuliaSetClient
 import cz.cvut.fel.dsva.grpc.WorkStation
 import cz.cvut.fel.dsva.grpc.workStation
@@ -13,13 +12,13 @@ import io.grpc.ManagedChannelBuilder
 import java.io.File
 import java.io.IOException
 import java.time.Duration
-import kotlin.math.max
 
 data class WorkStationConfig(
     val ip: String,
     val port: Int,
     val maxCalculationDuration: Duration,
     val batchSize: Int,
+    val maxRequestRepeat: Int,
     val otherWorkstations: List<RemoteWorkStation>,
 ) {
     val vectorClock: VectorClock = VectorClock(this, otherWorkstations)
@@ -77,7 +76,6 @@ data class WorkStationConfig(
         }
 
         private const val DEFAULT_PROPERTIES_FILE_NAME = "default-properties.json"
-
     }
 }
 
@@ -89,8 +87,8 @@ data class RemoteWorkStation(val ip: String, val port: Int) {
         port = this@RemoteWorkStation.port
     }
 
-    fun createClient(): JuliaSetClient =
-        JuliaSetClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build())
+    fun createClient(workStationConfig: WorkStationConfig): JuliaSetClient =
+        JuliaSetClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build(), workStationConfig)
 }
 
 fun WorkStation.toRemoteWorkStation(): RemoteWorkStation = RemoteWorkStation(this.ip, this.port)
