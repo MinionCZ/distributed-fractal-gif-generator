@@ -3,9 +3,8 @@ package cz.cvut.fel.dsva.datastructure
 import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.CalculationResult
-import cz.cvut.fel.dsva.grpc.Clock
-import cz.cvut.fel.dsva.grpc.WorkStation
 import cz.cvut.fel.dsva.grpc.batchCalculationRequest
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.LinkedList
 
@@ -15,11 +14,26 @@ data class RemoteTaskBatch(
     val startTimestamp: LocalDateTime,
     val worker: RemoteWorkStation,
 ) {
-    fun toBatchCalculationRequest(workStationConfig: WorkStationConfig): BatchCalculationRequest = batchCalculationRequest {
-        requests.addAll(tasks)
-        requester = workStationConfig.toWorkStation()
-        vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+    private var lastUpdateTimestamp: LocalDateTime = startTimestamp
+
+    fun toBatchCalculationRequest(workStationConfig: WorkStationConfig): BatchCalculationRequest =
+        batchCalculationRequest {
+            requests.addAll(tasks)
+            requester = workStationConfig.toWorkStation()
+            vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+        }
+
+    fun updateLastUpdateTimestamp() {
+        synchronized(this) {
+            lastUpdateTimestamp = LocalDateTime.now()
+        }
     }
+
+    fun isTimeOuted(maxRunTime: Duration): Boolean =
+        synchronized(this) {
+            this.lastUpdateTimestamp.plus(maxRunTime) <= LocalDateTime.now()
+        }
+
 }
 
 class RequestedTaskBatch(
@@ -29,6 +43,7 @@ class RequestedTaskBatch(
 ) {
     private val tasks: MutableList<CalculationRequest> = LinkedList(tasks)
     private val calculatedImages: MutableList<CalculationResult> = LinkedList()
+
 
     fun popTask(): CalculationRequest? {
         synchronized(this) {

@@ -97,10 +97,9 @@ class Job(
         }
     }
 
-    fun getTimeOutedJobs(timeout: Duration): List<RemoteTaskBatch> {
+    fun getTimeOutedJobs(maxRunDuration: Duration): List<RemoteTaskBatch> {
         synchronized(this) {
-            val cutOffTime = LocalDateTime.now()
-            return this.remoteTasks.filter { it.startTimestamp.plus(timeout) <= cutOffTime }
+            return this.remoteTasks.filter { it.isTimeOuted(maxRunDuration) }
         }
     }
 
