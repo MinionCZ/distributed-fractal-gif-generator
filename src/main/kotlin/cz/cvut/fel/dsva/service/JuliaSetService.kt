@@ -30,7 +30,7 @@ class JuliaSetServiceImpl(
         logger.info("Handling request calculation from remote machine ${request.requester.toRemoteWorkStation()}")
         workStationConfig.vectorClock.increment()
         return if (systemJobStore.isSystemJobPresent()) {
-            logger.info("Machine is already computing")
+            logger.info("This machine is already computing current task")
             requestCalculationRequestResult {
                 status = RequestCalculationRequestResponseStatus.ALREADY_IN_COMPUTATION
                 vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
@@ -78,8 +78,7 @@ class JuliaSetServiceImpl(
             systemJobStore.getSystemJob().addCalculationResults(calculationResult.resultsList, remoteWorker)
             logger.info("Added calculation results from remote job from machine $remoteWorker images with ids ${calculationResult.resultsList.map { it.imageProperties.id }}")
         } catch (e: IllegalStateException) {
-            logger.error("Fatal error has occurred during handing of new work ${e.message}")
-            throw e
+            logger.error("Fatal error has occurred during handling of done work: ${e.message}")
         }
         return Empty.getDefaultInstance()
     }
