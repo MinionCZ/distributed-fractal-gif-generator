@@ -69,6 +69,7 @@ tasks.shadowJar {
     archiveBaseName = "dsva-semestral"
     archiveClassifier = ""
     archiveVersion = ""
+    mergeServiceFiles()
 }
 
 tasks.build {
