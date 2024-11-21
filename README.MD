@@ -144,6 +144,32 @@ Atribut juliaSetProperties udává parametry Mandelbrotovy množiny pro výpoče
 Parametry offset a numberOfIterations udávají hodnotu na začátku a na konci výpočtu, pokud se hodnoty liší tak aplikace
 linearně podle počtu snímků použije hodnoty mezi startovní a koncovou hodnotou na výpočet jednotlivých snímků.
 
+## Popis funkce uzlů
+
+Každý uzel má od uživatele nastavené parametry a to včetně toho, kolik a kde se nachází další stanice. Dále má každý
+uzel synchronizované uložiště parametrů distribuovaného výpočtu. Uzel si do uložiště job uloží buď při vytvoření tasku
+uživatelem, nebo pokud dostanou přes gRPC pokyn k výpočtu. Pokud už provádí nějaký výpočet, tak odmítne participovat na
+dalším výpočtu. Dále si každý uzel pamatuje komu a jaké výpočty přeposlal/zdali aktuálně někomu vypočítává nějaké
+snímky.
+
+### Průběh výpočtu
+
+1. Uživatel zadá nový výpočet do nějakého uzlu
+2. Uzel zkusí distribuovat práci ostatním uzlům, pokud se mu to podaří a na vedlejším vlákně spustí výpočet u sebe
+3. Pokud kterýkoliv uzel dokončí práci, tak napočítané hodnoty odešle zpět uzlu, který mu práci přiřadil a zeptá se
+   ostatních uzlů, zdali pro něj nemají práci
+    1. Pokud mu nějaký uzel vrátí požadavek na práci, tak začne vypočet práce pro tento uzel
+    2. Pokud mu žádný uzel nevrátí požadavek na práci, tak považuje výpočet za ukončený a odebere data z výpočtu ze
+       synchronizovaného uložiště
+4. Pokud kterýkoliv uzel, který se účastní výpočtu dostane požadavek na to, zdali nemá nějakou práci tak odpoví jedním
+   ze 2 způsobů
+    1. Pokud má dostatek snímků, které může předat dál, tak se podělí o svou práci a uloží si, že konkrétnímu uzlu
+       poskytl zadání práce. Pak pokračuje ve svém výpočtu. Po dokončení svého výpočtu vyčká na timeout jobu a nebo na
+       návrat hodnot, až poté odesílá výsledek původnímu uzlu
+    2. Pokud uzel nemá dostatek snímků, tak vrátí prázdný list zadání značící nedostatek práce
+5. Hlavní uzel po dokončení lokálního výpočtu čeká na distribuované joby, pokud joby vytimeoutují tak začne s výpočtem
+   sám
+6. Po získání všech vypočtených snímků, hlavní uzel složí a uloží výsledný gif
 
 
 
