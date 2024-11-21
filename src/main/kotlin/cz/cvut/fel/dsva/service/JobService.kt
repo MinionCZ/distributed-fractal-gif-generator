@@ -217,9 +217,15 @@ class JobServiceImpl(
     override fun prepareRemoteJobs(): List<RemoteTaskBatch> {
         val jobs = ArrayList<RemoteTaskBatch>()
         for (remoteWorkStation in workStationConfig.otherWorkstations) {
-            val taskBatch = systemJobStore.getSystemJob()
-                .createRemoteJob(workStationConfig.batchSize, remoteWorkStation)
-            jobs.add(taskBatch)
+            try {
+                val taskBatch = systemJobStore.getSystemJob()
+                    .createRemoteJob(workStationConfig.batchSize, remoteWorkStation)
+                jobs.add(taskBatch)
+            } catch (e: IllegalStateException) {
+                logger.info("Not enough tasks to create tasks for all remote workstations. Jobs for following workstations are prepared: ${jobs.map { it.worker }}")
+                break
+            }
+
         }
         return jobs
     }
