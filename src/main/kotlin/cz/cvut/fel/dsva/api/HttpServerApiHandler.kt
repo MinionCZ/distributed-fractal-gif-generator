@@ -16,9 +16,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class HttpServerApiHandler(
-    private val currentWorkStationConfig: WorkStationConfig,
+    currentWorkStationConfig: WorkStationConfig,
     private val userInputService: UserInputService,
-    private val httpServer: Javalin,
+    httpServer: Javalin,
     private val objectMapper: ObjectMapper,
     private val workStationHttpManagementService: WorkStationHttpManagementService
 ) {
