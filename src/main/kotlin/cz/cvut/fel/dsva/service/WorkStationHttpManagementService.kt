@@ -4,7 +4,6 @@ import cz.cvut.fel.dsva.GrpcServerWrapper
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.api.RemoteWorkStationDto
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.datastructure.toRemoteWorkStation
 import io.javalin.http.ConflictResponse
 import kotlinx.coroutines.runBlocking
 

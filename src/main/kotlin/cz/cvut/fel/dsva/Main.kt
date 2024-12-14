@@ -85,8 +85,8 @@ class GrpcServerWrapper private constructor(
                 .maxInboundMessageSize(Int.MAX_VALUE)
                 .build()
             this.server.start()
-            workStationConfig.vectorClock.increment()
             logger.info("Grpc server started, listening on ip ${workStationConfig.ip} and port ${workStationConfig.port}")
+            running = true
         }
     }
 
@@ -95,8 +95,8 @@ class GrpcServerWrapper private constructor(
             check(running) { "Already stopped" }
             logger.info("Shutting down grpc server")
             this.server.shutdownNow().awaitTermination()
-            workStationConfig.vectorClock.increment()
             logger.info("Shut down grpc server")
+            running = false
         }
     }
 
