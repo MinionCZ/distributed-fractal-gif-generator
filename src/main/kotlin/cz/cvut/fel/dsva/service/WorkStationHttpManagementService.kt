@@ -3,6 +3,8 @@ package cz.cvut.fel.dsva.service
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.api.RemoteWorkStationDto
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
+import cz.cvut.fel.dsva.datastructure.toRemoteWorkStation
+import io.javalin.http.ConflictResponse
 import kotlinx.coroutines.runBlocking
 
 
@@ -57,11 +59,29 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
     }
 
     override fun kill() {
-        TODO("Not yet implemented")
+        try {
+            workStationConfig.vectorClock.increment()
+            logger.info("Killing work station")
+            workStationConfig.turnOffCommunication()
+            workStationConfig.vectorClock.increment()
+            logger.info("Work station killed")
+        } catch (e: IllegalStateException) {
+            logger.info("Workstation $workStationConfig is already killed")
+            throw ConflictResponse("Workstation $workStationConfig is already killed")
+        }
     }
 
     override fun revive() {
-        TODO("Not yet implemented")
+        try {
+            workStationConfig.vectorClock.increment()
+            logger.info("Reviving work station")
+            workStationConfig.turnOnCommunication()
+            workStationConfig.vectorClock.increment()
+            logger.info("Work station is running now")
+        } catch (e: IllegalStateException) {
+            logger.info("Workstation $workStationConfig is already running")
+            throw ConflictResponse("Workstation $workStationConfig is already running")
+        }
     }
 
 
