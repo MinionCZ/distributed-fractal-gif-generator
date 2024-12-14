@@ -24,7 +24,10 @@ class HttpServerApiHandler(
 
     init {
         httpServer.post("/new-job", this::newJob)
-
+        httpServer.post("/join", this::join)
+        httpServer.post("/leave", this::leave)
+        httpServer.post("/kill", this::kill)
+        httpServer.post("/revive", this::revive)
     }
 
 
@@ -49,8 +52,21 @@ class HttpServerApiHandler(
             logger.info("Error occurred while creating new job")
             throw ConflictResponse(e.message ?: "Job is already running")
         }
+    }
+
+    private fun revive(context: Context) {
 
     }
 
+    private fun kill(context: Context) {
 
+    }
+
+    private fun leave(context: Context) {
+
+    }
+
+    private fun join(context: Context) {
+
+    }
 }
