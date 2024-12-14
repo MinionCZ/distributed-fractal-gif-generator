@@ -1,5 +1,6 @@
 package cz.cvut.fel.dsva.service
 
+import cz.cvut.fel.dsva.GrpcServerWrapper
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.api.RemoteWorkStationDto
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
@@ -22,6 +23,10 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
     override fun join(remoteWorkStations: Collection<RemoteWorkStationDto>) {
         workStationConfig.vectorClock.increment()
         logger.info("Joining topology and sending information about joining to workstations $remoteWorkStations")
+        if (GrpcServerWrapper.getInstance().running) {
+            logger.info("Workstation is already running")
+            throw ConflictResponse("Workstation is already running")
+        }
         for (station in remoteWorkStations) {
             try {
                 val remoteWorkStation = workStationConfig.addRemoteWorkstation(station.toDao())
@@ -33,7 +38,7 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
                 logger.info("Workstation $station already exists")
             }
         }
-        workStationConfig.turnOnCommunication()
+        GrpcServerWrapper.getInstance().start()
         workStationConfig.vectorClock.increment()
         logger.info("Successfully joined the workstations $remoteWorkStations and turned on")
     }
@@ -42,6 +47,10 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
         workStationConfig.vectorClock.increment()
         val remoteWorkStations = workStationConfig.getOtherWorkstations()
         logger.info("Leaving topology and sending information about leaving to workstations $remoteWorkStations")
+        if (!GrpcServerWrapper.getInstance().running) {
+            logger.info("Workstation is already stopped")
+            throw ConflictResponse("Workstation is already stopped")
+        }
         for (remoteWorkStation in remoteWorkStations) {
             try {
                 workStationConfig.removeRemoteWorkstation(remoteWorkStation)
@@ -53,7 +62,7 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
                 logger.info("Workstation $remoteWorkStation already left")
             }
         }
-        workStationConfig.turnOffCommunication()
+        GrpcServerWrapper.getInstance().stop()
         workStationConfig.vectorClock.increment()
         logger.info("Successfully left the workstations $remoteWorkStations")
     }
@@ -62,7 +71,11 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
         try {
             workStationConfig.vectorClock.increment()
             logger.info("Killing work station")
-            workStationConfig.turnOffCommunication()
+            if (!GrpcServerWrapper.getInstance().running) {
+                logger.info("Workstation is already stopped")
+                throw ConflictResponse("Workstation is already stopped")
+            }
+            GrpcServerWrapper.getInstance().stop()
             workStationConfig.vectorClock.increment()
             logger.info("Work station killed")
         } catch (e: IllegalStateException) {
@@ -75,8 +88,12 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
         try {
             workStationConfig.vectorClock.increment()
             logger.info("Reviving work station")
-            workStationConfig.turnOnCommunication()
+            if (GrpcServerWrapper.getInstance().running) {
+                logger.info("Workstation is already running")
+                throw ConflictResponse("Workstation is already running")
+            }
             workStationConfig.vectorClock.increment()
+            GrpcServerWrapper.getInstance().start()
             logger.info("Work station is running now")
         } catch (e: IllegalStateException) {
             logger.info("Workstation $workStationConfig is already running")

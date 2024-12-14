@@ -45,7 +45,6 @@ data class WorkStationConfig(
     }
 
     val vectorClock: VectorClock = VectorClock(this, otherWorkstations)
-    private var online: Boolean = true
 
     fun toWorkStation(): WorkStation = workStation {
         ip = this@WorkStationConfig.ip
@@ -56,25 +55,6 @@ data class WorkStationConfig(
         otherWorkstations.find { it.workStation == workStation }
             ?: throw NoSuchElementException("Remote workstation $workStation not found")
 
-
-    fun turnOffCommunication() {
-        synchronized(this) {
-            check(online) {
-                "Communication is already turned off"
-            }
-            online = false
-        }
-    }
-
-
-    fun turnOnCommunication() {
-        synchronized(this) {
-            check(!online) {
-                "Communication is already turned on"
-            }
-            online = true
-        }
-    }
 
     companion object {
         private val logger = KotlinLogging.logger { }
