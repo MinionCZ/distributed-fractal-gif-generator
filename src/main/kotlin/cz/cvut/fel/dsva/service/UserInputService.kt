@@ -9,6 +9,7 @@ import cz.cvut.fel.dsva.grpc.CalculationRequest
 import cz.cvut.fel.dsva.grpc.calculationRequest
 import cz.cvut.fel.dsva.grpc.juliaSetProperties
 import cz.cvut.fel.dsva.images.ImagesGenerator
+import io.javalin.http.ConflictResponse
 import java.util.LinkedList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -27,27 +28,32 @@ class UserInputServiceImpl(
 ) : UserInputService {
     private val logger = LoggerWrapper(UserInputServiceImpl::class, workStationConfig)
     override suspend fun startNewDistributedJob(generateImageDto: GenerateImageDto) {
-        validateWorkstationState()
-        enqueueNewUserJob(generateImageDto)
-        logger.info("Starting new distributed job")
-        coroutineScope {
-            launch(Dispatchers.Default) {
-                jobService.sendRemoteJobs(jobService.prepareRemoteJobs())
-                jobService.calculateTasks()
-                jobService.awaitCalculationFinish()
-                workStationConfig.vectorClock.increment()
-                logger.info("Starting gif writing")
-                imagesGenerator.createGif(
-                    generateImageDto.gifProperties,
-                    generateImageDto.imageProperties,
-                    systemJobStore.getSystemJob().calculatedImagesCopy
-                )
-                workStationConfig.vectorClock.increment()
-                logger.info("Done writing of gif")
-                systemJobStore.removeSystemJob()
-                workStationConfig.vectorClock.increment()
-                logger.info("Done job")
+        try {
+            validateWorkstationState()
+            enqueueNewUserJob(generateImageDto)
+            logger.info("Starting new distributed job")
+            coroutineScope {
+                launch(Dispatchers.Default) {
+                    jobService.sendRemoteJobs(jobService.prepareRemoteJobs())
+                    jobService.calculateTasks()
+                    jobService.awaitCalculationFinish()
+                    workStationConfig.vectorClock.increment()
+                    logger.info("Starting gif writing")
+                    imagesGenerator.createGif(
+                        generateImageDto.gifProperties,
+                        generateImageDto.imageProperties,
+                        systemJobStore.getSystemJob().calculatedImagesCopy
+                    )
+                    workStationConfig.vectorClock.increment()
+                    logger.info("Done writing of gif")
+                    systemJobStore.removeSystemJob()
+                    workStationConfig.vectorClock.increment()
+                    logger.info("Done job")
+                }
             }
+        } catch (e: IllegalStateException) {
+            logger.info("Error occurred while creating new job")
+            throw ConflictResponse(e.message ?: "Job is already running")
         }
     }
 

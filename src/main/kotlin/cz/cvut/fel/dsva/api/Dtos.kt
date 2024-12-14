@@ -1,5 +1,6 @@
 package cz.cvut.fel.dsva.api
 
+import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.grpc.complexNumber
 import cz.cvut.fel.dsva.grpc.imageProperties
 import java.time.Duration
@@ -140,3 +141,44 @@ data class GenerateImageDto(
 interface Validatable {
     fun validate()
 }
+
+data class RemoteWorkStationDto(val ip: String, val port: Int) : Validatable {
+    override fun validate() {
+        validateIpAddress(ip)
+        require(port in PORT_RANGE) {
+            "Port ($port) is not in valid port range $PORT_RANGE"
+        }
+    }
+
+    private fun validateIpAddress(ip: String) {
+        for (c in ip) {
+            require(c in VALID_IP_CHARACTERS) {
+                "Invalid IP address: $ip"
+            }
+        }
+        val parts = ip.split(".")
+        require(parts.size == CORRECT_NUMBER_OF_PARTS) {
+            "Invalid IP address: $ip"
+        }
+        parts.forEach {
+            it.toIntOrNull()?.let { parsedNumber ->
+                require(parsedNumber <= MAX_IP_VALUE) {
+                    "Invalid IP address: $ip"
+                }
+            } ?: throw IllegalArgumentException("Invalid IP address: $ip")
+        }
+    }
+
+    fun toDao() = RemoteWorkStation(ip, port)
+
+    private companion object {
+        private val VALID_IP_CHARACTERS = buildSet {
+            add('.')
+            addAll('0'..'9')
+        }
+        private const val CORRECT_NUMBER_OF_PARTS = 4
+        private const val MAX_IP_VALUE = 255
+        private val PORT_RANGE = 1000..65535
+    }
+}
+

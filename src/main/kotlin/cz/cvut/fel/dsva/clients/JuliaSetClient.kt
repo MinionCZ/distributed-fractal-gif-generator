@@ -12,10 +12,10 @@ import io.grpc.StatusException
 import java.io.Closeable
 import java.util.concurrent.TimeUnit
 
-class JuliaSetClient(private val channel: ManagedChannel, private val workStationConfig: WorkStationConfig) :
-    Closeable {
+class JuliaSetClient(private val channel: ManagedChannel, workStationConfig: WorkStationConfig) :
+    Closeable, BaseClient<JuliaSetClient>(workStationConfig) {
     private val stub = JuliaSetCalculatorGrpcKt.JuliaSetCalculatorCoroutineStub(channel)
-    private val logger = LoggerWrapper(JuliaSetClient::class, workStationConfig)
+    override val logger = LoggerWrapper(JuliaSetClient::class, workStationConfig)
 
     override fun close() {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
@@ -36,16 +36,4 @@ class JuliaSetClient(private val channel: ManagedChannel, private val workStatio
         runRequestRepeatedly {
             stub.requestCalculation(batchCalculationRequest)
         }
-
-    private suspend fun <T : Any> runRequestRepeatedly(sendRequest: suspend () -> T): T {
-        for (i in 0..<workStationConfig.maxRequestRepeat) {
-            try {
-                return sendRequest()
-            } catch (e: StatusException) {
-                println(e)
-                logger.info("Unable to contact remote machine in attempt ${i + 1} out of ${workStationConfig.maxRequestRepeat}, because of $e")
-            }
-        }
-        error("Unable to contact remote machine")
-    }
 }

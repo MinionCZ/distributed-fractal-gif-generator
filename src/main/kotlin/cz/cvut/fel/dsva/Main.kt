@@ -13,6 +13,7 @@ import cz.cvut.fel.dsva.input.UserInputHandler
 import cz.cvut.fel.dsva.service.JobServiceImpl
 import cz.cvut.fel.dsva.service.JuliaSetServiceImpl
 import cz.cvut.fel.dsva.service.UserInputServiceImpl
+import cz.cvut.fel.dsva.service.WorkStationHttpManagementServiceImpl
 import cz.cvut.fel.dsva.service.WorkStationManagementService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.ServerBuilder
@@ -30,7 +31,14 @@ fun main(args: Array<String>) {
     val juliaSetService = JuliaSetServiceImpl(systemJobStore, workStationConfig, jobService)
     val userInputService = UserInputServiceImpl(systemJobStore, workStationConfig, imagesGenerator, jobService)
     val httpServer = initHttpServer(workStationConfig.httpServerPort, workStationConfig.ip)
-    HttpServerApiHandler(workStationConfig, userInputService, httpServer, objectMapper)
+    val remoteWorkStationHttpManagementService = WorkStationHttpManagementServiceImpl(workStationConfig)
+    HttpServerApiHandler(
+        workStationConfig,
+        userInputService,
+        httpServer,
+        objectMapper,
+        remoteWorkStationHttpManagementService
+    )
     val workStationManagementApiHandler =
         WorkStationManagementApiHandler(WorkStationManagementService(workStationConfig))
     val juliaSetApiHandler = JuliaSetApiHandler(juliaSetService)

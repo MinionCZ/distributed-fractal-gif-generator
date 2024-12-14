@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import cz.cvut.fel.dsva.clients.JuliaSetClient
+import cz.cvut.fel.dsva.clients.WorkStationManagementClient
 import cz.cvut.fel.dsva.grpc.WorkStation
 import cz.cvut.fel.dsva.grpc.workStation
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -25,19 +26,18 @@ data class WorkStationConfig(
 ) {
     fun getOtherWorkstations(): List<RemoteWorkStation> = synchronized(this) { LinkedList(otherWorkstations) }
 
-    fun addRemoteWorkstation(workStation: WorkStation) {
+    fun addRemoteWorkstation(remoteWorkStation: RemoteWorkStation): RemoteWorkStation {
         synchronized(this) {
-            val remoteWorkStation = workStation.toRemoteWorkStation()
             check(!otherWorkstations.contains(remoteWorkStation)) {
                 "Workstation $remoteWorkStation is already registered"
             }
             otherWorkstations.add(remoteWorkStation)
+            return remoteWorkStation
         }
     }
 
-    fun removeRemoteWorkstation(workStation: WorkStation) {
+    fun removeRemoteWorkstation(remoteWorkStation: RemoteWorkStation) {
         synchronized(this) {
-            val remoteWorkStation = workStation.toRemoteWorkStation()
             check(otherWorkstations.remove(remoteWorkStation)) {
                 "Workstation $remoteWorkStation is not found"
             }
@@ -130,8 +130,10 @@ data class RemoteWorkStation(val ip: String, val port: Int) {
         port = this@RemoteWorkStation.port
     }
 
-    fun createClient(workStationConfig: WorkStationConfig): JuliaSetClient =
+    fun createJuliaSetClient(workStationConfig: WorkStationConfig): JuliaSetClient =
         JuliaSetClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build(), workStationConfig)
+    fun createWorkStationManagementClient(workStationConfig: WorkStationConfig): WorkStationManagementClient =
+        WorkStationManagementClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build(), workStationConfig)
 }
 
 fun WorkStation.toRemoteWorkStation(): RemoteWorkStation = RemoteWorkStation(this.ip, this.port)
