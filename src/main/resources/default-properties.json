@@ -4,6 +4,7 @@
   "maxCalculationDuration": "PT300S",
   "batchSize": 50,
   "maxRequestRepeat": 5,
+  "httpServerPort": 8080,
   "otherWorkstations": [
     {
       "ip": "127.0.0.1",

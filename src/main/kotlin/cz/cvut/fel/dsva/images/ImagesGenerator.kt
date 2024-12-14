@@ -4,10 +4,10 @@ import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.nio.StreamingGifWriter
 import com.sksamuel.scrimage.pixels.Pixel
 import com.sksamuel.scrimage.pixels.PixelTools.rgb
+import cz.cvut.fel.dsva.api.GifProperties
+import cz.cvut.fel.dsva.api.ImageProperties
 import cz.cvut.fel.dsva.grpc.CalculationResult
 import cz.cvut.fel.dsva.grpc.JuliaSetProperties
-import cz.cvut.fel.dsva.input.GifProperties
-import cz.cvut.fel.dsva.input.ImageProperties
 import java.awt.image.BufferedImage
 import java.io.File
 import kotlin.math.log

@@ -20,6 +20,7 @@ data class WorkStationConfig(
     val batchSize: Int,
     val maxRequestRepeat: Int,
     val otherWorkstations: List<RemoteWorkStation>,
+    val httpServerPort: Int,
 ) {
     val vectorClock: VectorClock = VectorClock(this, otherWorkstations)
 

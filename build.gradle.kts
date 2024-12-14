@@ -26,6 +26,7 @@ dependencies {
     implementation(loggingLibs.slf4j)
     implementation(loggingLibs.logbackCore)
     implementation(loggingLibs.logbackClassic)
+    implementation(httpServer.server)
     testImplementation(kotlin("test"))
 }
 

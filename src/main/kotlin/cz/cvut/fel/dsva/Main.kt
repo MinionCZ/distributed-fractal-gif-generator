@@ -3,6 +3,7 @@ package cz.cvut.fel.dsva
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import cz.cvut.fel.dsva.api.HttpServerApiHandler
 import cz.cvut.fel.dsva.api.JuliaSetApiHandler
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.SystemJobStoreImpl
@@ -13,6 +14,7 @@ import cz.cvut.fel.dsva.service.JuliaSetServiceImpl
 import cz.cvut.fel.dsva.service.UserInputServiceImpl
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.ServerBuilder
+import io.javalin.Javalin
 import kotlinx.coroutines.runBlocking
 
 private val logger = KotlinLogging.logger {}
@@ -25,7 +27,8 @@ fun main(args: Array<String>) {
     val jobService = JobServiceImpl(systemJobStore, imagesGenerator, workStationConfig)
     val juliaSetService = JuliaSetServiceImpl(systemJobStore, workStationConfig, jobService)
     val userInputService = UserInputServiceImpl(systemJobStore, workStationConfig, imagesGenerator, jobService)
-    val userInputHandler = UserInputHandler(systemJobStore, workStationConfig, objectMapper, userInputService)
+    val httpServer = initHttpServer(workStationConfig.httpServerPort, workStationConfig.ip)
+    HttpServerApiHandler(workStationConfig, userInputService, httpServer, objectMapper)
     val juliaSetApiHandler = JuliaSetApiHandler(juliaSetService)
     val server = ServerBuilder
         .forPort(workStationConfig.port)
@@ -35,7 +38,7 @@ fun main(args: Array<String>) {
     server.start()
     logger.info { "Server started, listening on ip ${workStationConfig.ip} and port ${workStationConfig.port}" }
     runBlocking {
-        userInputHandler.startInputHandler()
+        httpServer.start()
     }
 }
 
@@ -44,4 +47,12 @@ private fun Array<String>.getPropertiesFileName(): String? {
         return null
     }
     return this[0]
+}
+
+private fun initHttpServer(port: Int, ip: String): Javalin {
+    return Javalin.create { config ->
+        config.useVirtualThreads = true
+        config.jetty.defaultPort = port
+        config.jetty.defaultHost = ip
+    }
 }
