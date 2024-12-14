@@ -1,6 +1,7 @@
 package cz.cvut.fel.dsva.api
 
 import com.fasterxml.jackson.core.JacksonException
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
@@ -67,7 +68,7 @@ class HttpServerApiHandler(
     private fun join(context: Context) {
         try {
             logger.info("Received new join request")
-            val remoteStations = context.body().parseJson<Collection<RemoteWorkStationDto>>()
+            val remoteStations = context.body().parseJson<List<RemoteWorkStationDto>>()
             remoteStations.forEach { it.validate() }
             workStationHttpManagementService.join(remoteStations)
             logger.info("Successfully joined topology")
@@ -81,7 +82,7 @@ class HttpServerApiHandler(
 
     private inline fun <reified T> String.parseJson(): T {
         try {
-            return objectMapper.readValue(this, T::class.java)
+            return objectMapper.readValue(this, object : TypeReference<T>() {})
         } catch (e: JacksonException) {
             logger.info("Error occurred while creating new job")
             throw BadRequestResponse("Invalid json")
