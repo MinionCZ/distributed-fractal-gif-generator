@@ -12,6 +12,7 @@ import io.grpc.ManagedChannelBuilder
 import java.io.File
 import java.io.IOException
 import java.time.Duration
+import java.util.LinkedList
 
 data class WorkStationConfig(
     val ip: String,
@@ -19,9 +20,30 @@ data class WorkStationConfig(
     val maxCalculationDuration: Duration,
     val batchSize: Int,
     val maxRequestRepeat: Int,
-    val otherWorkstations: List<RemoteWorkStation>,
+    private val otherWorkstations: MutableList<RemoteWorkStation>,
     val httpServerPort: Int,
 ) {
+    fun getOtherWorkstations(): List<RemoteWorkStation> = synchronized(this) { LinkedList(otherWorkstations) }
+
+    fun addRemoteWorkstation(workStation: WorkStation) {
+        synchronized(this) {
+            val remoteWorkStation = workStation.toRemoteWorkStation()
+            check(!otherWorkstations.contains(remoteWorkStation)) {
+                "Workstation $remoteWorkStation is already registered"
+            }
+            otherWorkstations.add(remoteWorkStation)
+        }
+    }
+
+    fun removeRemoteWorkstation(workStation: WorkStation) {
+        synchronized(this) {
+            val remoteWorkStation = workStation.toRemoteWorkStation()
+            check(otherWorkstations.remove(remoteWorkStation)) {
+                "Workstation $remoteWorkStation is not found"
+            }
+        }
+    }
+
     val vectorClock: VectorClock = VectorClock(this, otherWorkstations)
     private var online: Boolean = true
 

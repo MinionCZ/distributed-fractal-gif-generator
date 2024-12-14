@@ -7,6 +7,10 @@ service JuliaSetCalculator {
   rpc requestNewWork (NewWorkRequest) returns (BatchCalculationRequest) {}
   rpc submitRequestedWork(BatchCalculationResult) returns (google.protobuf.Empty) {}
 }
+service WorkStationManagement{
+  rpc join(WorkStation) returns (google.protobuf.Empty){}
+  rpc leave(WorkStation) returns (google.protobuf.Empty) {}
+}
 
 enum RequestCalculationRequestResponseStatus{
   OK = 0;

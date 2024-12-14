@@ -93,7 +93,7 @@ class JobServiceImpl(
     private suspend fun requestForWorkOthers() {
         workStationConfig.vectorClock.increment()
         logger.info("Request work from other stations started")
-        for (remoteWorkStation in workStationConfig.otherWorkstations) {
+        for (remoteWorkStation in workStationConfig.getOtherWorkstations()) {
             logger.info("Requesting work from $remoteWorkStation")
             val response = remoteWorkStation.createClient(workStationConfig).use {
                 try {
@@ -216,7 +216,7 @@ class JobServiceImpl(
 
     override fun prepareRemoteJobs(): List<RemoteTaskBatch> {
         val jobs = ArrayList<RemoteTaskBatch>()
-        for (remoteWorkStation in workStationConfig.otherWorkstations) {
+        for (remoteWorkStation in workStationConfig.getOtherWorkstations()) {
             try {
                 val taskBatch = systemJobStore.getSystemJob()
                     .createRemoteJob(workStationConfig.batchSize, remoteWorkStation)
