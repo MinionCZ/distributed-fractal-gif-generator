@@ -1,4 +1,4 @@
-package cz.cvut.fel.dsva.service
+package cz.cvut.fel.dsva.service.grpc
 
 import com.google.protobuf.Empty
 import cz.cvut.fel.dsva.LoggerWrapper
@@ -14,44 +14,47 @@ import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResponseStatus
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
 import cz.cvut.fel.dsva.grpc.batchCalculationRequest
 import cz.cvut.fel.dsva.grpc.requestCalculationRequestResult
+import cz.cvut.fel.dsva.service.JobService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class JuliaSetServiceImpl(
     private val systemJobStore: SystemJobStore,
-    private val workStationConfig: WorkStationConfig,
+    workStationConfig: WorkStationConfig,
     private val jobService: JobService,
-) : JuliaSetService {
-    private val logger = LoggerWrapper(JuliaSetServiceImpl::class, workStationConfig = workStationConfig)
+) : JuliaSetService, BaseGrpcService<JuliaSetServiceImpl>(workStationConfig) {
+    override val logger = LoggerWrapper(JuliaSetServiceImpl::class, workStationConfig = workStationConfig)
 
-    override suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult {
-        this.workStationConfig.vectorClock.update(request.vectorClockList)
-        logger.info("Handling request calculation from remote machine ${request.requester.toRemoteWorkStation()}")
-        workStationConfig.vectorClock.increment()
-        return if (systemJobStore.isSystemJobPresent()) {
-            logger.info("This machine is already computing current task")
-            requestCalculationRequestResult {
-                status = RequestCalculationRequestResponseStatus.ALREADY_IN_COMPUTATION
-                vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
-            }
-        } else {
-            val newJob = Job(RemoteWorkStation(request.requester.ip, request.requester.port), request.requestsList)
-            systemJobStore.persistNewSystemJob(job = newJob)
-            logger.info("Successfully started new computation for images with ids ${request.requestsList.map { it.imageProperties.id }}")
-            jobService.sendRemoteJobs(jobService.prepareRemoteJobs())
-            runCalculationOnBackground()
-            requestCalculationRequestResult {
-                status = RequestCalculationRequestResponseStatus.OK
-                vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+    override suspend fun requestCalculation(request: BatchCalculationRequest): RequestCalculationRequestResult =
+        applyDelay {
+            this.workStationConfig.vectorClock.update(request.vectorClockList)
+            logger.info("Handling request calculation from remote machine ${request.requester.toRemoteWorkStation()}")
+            workStationConfig.vectorClock.increment()
+            return@applyDelay if (systemJobStore.isSystemJobPresent()) {
+                logger.info("This machine is already computing current task")
+                requestCalculationRequestResult {
+                    status = RequestCalculationRequestResponseStatus.ALREADY_IN_COMPUTATION
+                    vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+                }
+            } else {
+                val newJob = Job(RemoteWorkStation(request.requester.ip, request.requester.port), request.requestsList)
+                systemJobStore.persistNewSystemJob(job = newJob)
+                logger.info("Successfully started new computation for images with ids ${request.requestsList.map { it.imageProperties.id }}")
+                jobService.sendRemoteJobs(jobService.prepareRemoteJobs())
+                runCalculationOnBackground()
+                requestCalculationRequestResult {
+                    status = RequestCalculationRequestResponseStatus.OK
+                    vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
+                }
             }
         }
-    }
 
-    override fun handleNewWorkRequest(newWorkRequest: NewWorkRequest): BatchCalculationRequest {
+
+    override fun handleNewWorkRequest(newWorkRequest: NewWorkRequest): BatchCalculationRequest = applyDelay {
         this.workStationConfig.vectorClock.update(newWorkRequest.vectorClockList)
         logger.info("Handling new work request")
-        return try {
+        return@applyDelay try {
             val remoteWorkStation = this.workStationConfig.findRemoteWorkStation(newWorkRequest.station)
             workStationConfig.vectorClock.increment()
             systemJobStore
@@ -70,7 +73,8 @@ class JuliaSetServiceImpl(
         }
     }
 
-    override fun handleDoneWork(calculationResult: BatchCalculationResult): Empty {
+
+    override fun handleDoneWork(calculationResult: BatchCalculationResult): Empty = applyDelay {
         this.workStationConfig.vectorClock.update(calculationResult.vectorClockList)
         logger.info("Handling remote done work")
         try {
@@ -80,7 +84,7 @@ class JuliaSetServiceImpl(
         } catch (e: IllegalStateException) {
             logger.error("Fatal error has occurred during handling of done work: ${e.message}")
         }
-        return Empty.getDefaultInstance()
+        return@applyDelay Empty.getDefaultInstance()
     }
 
 

@@ -10,10 +10,10 @@ import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.SystemJobStoreImpl
 import cz.cvut.fel.dsva.images.ImagesGeneratorImpl
 import cz.cvut.fel.dsva.service.JobServiceImpl
-import cz.cvut.fel.dsva.service.JuliaSetServiceImpl
+import cz.cvut.fel.dsva.service.grpc.JuliaSetServiceImpl
 import cz.cvut.fel.dsva.service.UserInputServiceImpl
 import cz.cvut.fel.dsva.service.WorkStationHttpManagementServiceImpl
-import cz.cvut.fel.dsva.service.WorkStationManagementService
+import cz.cvut.fel.dsva.service.grpc.WorkStationManagementServiceImpl
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Server
 import io.grpc.ServerBuilder
@@ -39,7 +39,7 @@ fun main(args: Array<String>) {
         remoteWorkStationHttpManagementService
     )
     val workStationManagementApiHandler =
-        WorkStationManagementApiHandler(WorkStationManagementService(workStationConfig))
+        WorkStationManagementApiHandler(WorkStationManagementServiceImpl(workStationConfig))
     val juliaSetApiHandler = JuliaSetApiHandler(juliaSetService)
     httpServer.start()
     logger.info { "HTTP server started, listening on ip ${workStationConfig.ip} and port ${workStationConfig.httpServerPort}" }

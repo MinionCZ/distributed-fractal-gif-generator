@@ -2,15 +2,9 @@ package cz.cvut.fel.dsva.clients
 
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.grpc.BatchCalculationRequest
-import cz.cvut.fel.dsva.grpc.BatchCalculationResult
-import cz.cvut.fel.dsva.grpc.JuliaSetCalculatorGrpcKt
-import cz.cvut.fel.dsva.grpc.NewWorkRequest
-import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
 import cz.cvut.fel.dsva.grpc.WorkStationManagementGrpcKt
-import cz.cvut.fel.dsva.service.WorkStationManagementService
+import cz.cvut.fel.dsva.service.grpc.WorkStationManagementService
 import io.grpc.ManagedChannel
-import io.grpc.StatusException
 import java.io.Closeable
 import java.util.concurrent.TimeUnit
 
