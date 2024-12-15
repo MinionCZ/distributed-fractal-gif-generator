@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import cz.cvut.fel.dsva.clients.JuliaSetClient
+import cz.cvut.fel.dsva.clients.WorkStationManagementClient
 import cz.cvut.fel.dsva.grpc.WorkStation
 import cz.cvut.fel.dsva.grpc.workStation
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -12,6 +13,7 @@ import io.grpc.ManagedChannelBuilder
 import java.io.File
 import java.io.IOException
 import java.time.Duration
+import java.util.LinkedList
 
 data class WorkStationConfig(
     val ip: String,
@@ -19,8 +21,36 @@ data class WorkStationConfig(
     val maxCalculationDuration: Duration,
     val batchSize: Int,
     val maxRequestRepeat: Int,
-    val otherWorkstations: List<RemoteWorkStation>,
+    private val otherWorkstations: MutableList<RemoteWorkStation>,
+    val httpServerPort: Int,
 ) {
+    var messageDelay: Duration = Duration.ZERO
+        get() = synchronized(this) { field }
+        set(value) {
+            synchronized(this) { field = value }
+        }
+
+
+    fun getOtherWorkstations(): List<RemoteWorkStation> = synchronized(this) { LinkedList(otherWorkstations) }
+
+    fun addRemoteWorkstation(remoteWorkStation: RemoteWorkStation): RemoteWorkStation {
+        synchronized(this) {
+            check(!otherWorkstations.contains(remoteWorkStation)) {
+                "Workstation $remoteWorkStation is already registered"
+            }
+            otherWorkstations.add(remoteWorkStation)
+            return remoteWorkStation
+        }
+    }
+
+    fun removeRemoteWorkstation(remoteWorkStation: RemoteWorkStation) {
+        synchronized(this) {
+            check(otherWorkstations.remove(remoteWorkStation)) {
+                "Workstation $remoteWorkStation is not found"
+            }
+        }
+    }
+
     val vectorClock: VectorClock = VectorClock(this, otherWorkstations)
 
     fun toWorkStation(): WorkStation = workStation {
@@ -87,8 +117,14 @@ data class RemoteWorkStation(val ip: String, val port: Int) {
         port = this@RemoteWorkStation.port
     }
 
-    fun createClient(workStationConfig: WorkStationConfig): JuliaSetClient =
+    fun createJuliaSetClient(workStationConfig: WorkStationConfig): JuliaSetClient =
         JuliaSetClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build(), workStationConfig)
+
+    fun createWorkStationManagementClient(workStationConfig: WorkStationConfig): WorkStationManagementClient =
+        WorkStationManagementClient(
+            ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build(),
+            workStationConfig
+        )
 }
 
 fun WorkStation.toRemoteWorkStation(): RemoteWorkStation = RemoteWorkStation(this.ip, this.port)

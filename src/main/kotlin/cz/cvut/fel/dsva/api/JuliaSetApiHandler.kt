@@ -6,7 +6,7 @@ import cz.cvut.fel.dsva.grpc.BatchCalculationResult
 import cz.cvut.fel.dsva.grpc.JuliaSetCalculatorGrpcKt
 import cz.cvut.fel.dsva.grpc.NewWorkRequest
 import cz.cvut.fel.dsva.grpc.RequestCalculationRequestResult
-import cz.cvut.fel.dsva.service.JuliaSetService
+import cz.cvut.fel.dsva.service.grpc.JuliaSetService
 
 class JuliaSetApiHandler(private val juliaSetService: JuliaSetService) :
     JuliaSetCalculatorGrpcKt.JuliaSetCalculatorCoroutineImplBase() {

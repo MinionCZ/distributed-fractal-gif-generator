@@ -3,7 +3,6 @@ package cz.cvut.fel.dsva.service
 import com.google.protobuf.ByteString
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.RemoteTaskBatch
-import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.datastructure.RequestedTaskBatch
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import cz.cvut.fel.dsva.datastructure.SystemJobStore
@@ -16,7 +15,6 @@ import cz.cvut.fel.dsva.grpc.newWorkRequest
 import cz.cvut.fel.dsva.images.ImagesGenerator
 import java.time.Duration
 import java.time.LocalDateTime
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -93,9 +91,9 @@ class JobServiceImpl(
     private suspend fun requestForWorkOthers() {
         workStationConfig.vectorClock.increment()
         logger.info("Request work from other stations started")
-        for (remoteWorkStation in workStationConfig.otherWorkstations) {
+        for (remoteWorkStation in workStationConfig.getOtherWorkstations()) {
             logger.info("Requesting work from $remoteWorkStation")
-            val response = remoteWorkStation.createClient(workStationConfig).use {
+            val response = remoteWorkStation.createJuliaSetClient(workStationConfig).use {
                 try {
                     it.requestNewWorkload(newWorkRequest {
                         vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
@@ -157,7 +155,7 @@ class JobServiceImpl(
             }"
         )
         systemJobStore.getSystemJob().getRequestedTask()?.let { task ->
-            task.requester.createClient(workStationConfig).use {
+            task.requester.createJuliaSetClient(workStationConfig).use {
                 try {
                     it.sendCompletedCalculation(batchCalculationResult {
                         worker = workStationConfig.toWorkStation()
@@ -178,7 +176,7 @@ class JobServiceImpl(
             workStationConfig.vectorClock.increment()
             val resultList = systemJobStore.getSystemJob().getAndClearCalculatedImages()
             logger.info("Trying to send calculation results to starting point of this calculation $requester")
-            requester.createClient(workStationConfig).use {
+            requester.createJuliaSetClient(workStationConfig).use {
                 it.sendCompletedCalculation(batchCalculationResult {
                     worker = workStationConfig.toWorkStation()
                     vectorClock.addAll(workStationConfig.vectorClock.toGrpcFormat())
@@ -195,7 +193,7 @@ class JobServiceImpl(
         for (job in jobs) {
             CoroutineScope(Dispatchers.IO).launch {
                 logger.info("Sending remote job to ${job.worker.workStation.toRemoteWorkStation()}")
-                job.worker.createClient(workStationConfig).use {
+                job.worker.createJuliaSetClient(workStationConfig).use {
                     try {
                         val remoteJobBatch = job.toBatchCalculationRequest(workStationConfig)
                         val requestStatus = it.sendCalculationRequest(remoteJobBatch)
@@ -216,7 +214,7 @@ class JobServiceImpl(
 
     override fun prepareRemoteJobs(): List<RemoteTaskBatch> {
         val jobs = ArrayList<RemoteTaskBatch>()
-        for (remoteWorkStation in workStationConfig.otherWorkstations) {
+        for (remoteWorkStation in workStationConfig.getOtherWorkstations()) {
             try {
                 val taskBatch = systemJobStore.getSystemJob()
                     .createRemoteJob(workStationConfig.batchSize, remoteWorkStation)
