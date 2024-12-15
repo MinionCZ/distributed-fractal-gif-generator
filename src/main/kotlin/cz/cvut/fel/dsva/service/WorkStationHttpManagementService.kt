@@ -5,6 +5,7 @@ import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.api.RemoteWorkStationDto
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import io.javalin.http.ConflictResponse
+import java.time.Duration
 import kotlinx.coroutines.runBlocking
 
 
@@ -13,6 +14,7 @@ interface WorkStationHttpManagementService {
     fun leave()
     fun kill()
     fun revive()
+    fun setDelay(delay: Duration)
 }
 
 
@@ -100,5 +102,10 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
         }
     }
 
-
+    override fun setDelay(delay: Duration) {
+        workStationConfig.vectorClock.increment()
+        logger.info("Setting messaging delay to $delay")
+        workStationConfig.messageDelay = delay
+        logger.info("Successfully set delay to $delay")
+    }
 }

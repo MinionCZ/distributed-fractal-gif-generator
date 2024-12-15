@@ -24,6 +24,13 @@ data class WorkStationConfig(
     private val otherWorkstations: MutableList<RemoteWorkStation>,
     val httpServerPort: Int,
 ) {
+    var messageDelay: Duration = Duration.ZERO
+        get() = synchronized(this) { field }
+        set(value) {
+            synchronized(this) { field = value }
+        }
+
+
     fun getOtherWorkstations(): List<RemoteWorkStation> = synchronized(this) { LinkedList(otherWorkstations) }
 
     fun addRemoteWorkstation(remoteWorkStation: RemoteWorkStation): RemoteWorkStation {
@@ -112,8 +119,12 @@ data class RemoteWorkStation(val ip: String, val port: Int) {
 
     fun createJuliaSetClient(workStationConfig: WorkStationConfig): JuliaSetClient =
         JuliaSetClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build(), workStationConfig)
+
     fun createWorkStationManagementClient(workStationConfig: WorkStationConfig): WorkStationManagementClient =
-        WorkStationManagementClient(ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build(), workStationConfig)
+        WorkStationManagementClient(
+            ManagedChannelBuilder.forAddress(ip, port).usePlaintext().build(),
+            workStationConfig
+        )
 }
 
 fun WorkStation.toRemoteWorkStation(): RemoteWorkStation = RemoteWorkStation(this.ip, this.port)

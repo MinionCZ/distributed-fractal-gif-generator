@@ -1,10 +1,13 @@
 package cz.cvut.fel.dsva.api
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonValue
 import cz.cvut.fel.dsva.datastructure.RemoteWorkStation
 import cz.cvut.fel.dsva.grpc.complexNumber
 import cz.cvut.fel.dsva.grpc.imageProperties
 import java.time.Duration
 import kotlin.math.pow
+import kotlin.reflect.jvm.internal.ReflectProperties.Val
 
 
 data class ComplexNumber(val real: Double, val imaginary: Double) {
@@ -182,3 +185,20 @@ data class RemoteWorkStationDto(val ip: String, val port: Int) : Validatable {
     }
 }
 
+data class DelayDto(
+    @field:JsonProperty
+    val delay: Duration,
+) : Validatable {
+    override fun validate() {
+        require(delay.isPositive) {
+            "Delay duration must be positive, but was $delay"
+        }
+        require(delay <= MAX_DELAY) {
+            "Delay duration must be lesser than $MAX_DELAY, but was $delay"
+        }
+    }
+
+    companion object {
+        private val MAX_DELAY = Duration.ofMinutes(1)
+    }
+}

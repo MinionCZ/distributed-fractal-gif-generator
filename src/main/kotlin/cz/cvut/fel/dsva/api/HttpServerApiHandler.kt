@@ -31,6 +31,7 @@ class HttpServerApiHandler(
         httpServer.post("/leave", this::leave)
         httpServer.post("/kill", this::kill)
         httpServer.post("/revive", this::revive)
+        httpServer.post("/set-delay", this::setDelay)
     }
 
 
@@ -79,6 +80,18 @@ class HttpServerApiHandler(
         }
     }
 
+    private fun setDelay(context: Context) {
+        try {
+            logger.info("Received new delay before sending messages")
+            val newDelay = context.body().parseJson<DelayDto>()
+            workStationHttpManagementService.setDelay(newDelay.delay)
+            context.status(HttpStatus.NO_CONTENT)
+        } catch (e: IllegalArgumentException) {
+            logger.info("Error occurred while setting delay")
+            throw BadRequestResponse("Json contains invalid data: ${e.message}")
+        }
+    }
+
 
     private inline fun <reified T> String.parseJson(): T {
         try {
@@ -87,6 +100,5 @@ class HttpServerApiHandler(
             logger.info("Error occurred while creating new job")
             throw BadRequestResponse("Invalid json")
         }
-
     }
 }
