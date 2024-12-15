@@ -84,6 +84,7 @@ class HttpServerApiHandler(
         try {
             logger.info("Received new delay before sending messages")
             val newDelay = context.body().parseJson<DelayDto>()
+            newDelay.validate()
             workStationHttpManagementService.setDelay(newDelay.delay)
             context.status(HttpStatus.NO_CONTENT)
         } catch (e: IllegalArgumentException) {
