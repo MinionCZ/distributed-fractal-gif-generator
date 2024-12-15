@@ -3,13 +3,15 @@ package cz.cvut.fel.dsva.clients
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
 import io.grpc.StatusException
+import java.time.Duration
 
-abstract class BaseClient <T: Any>(protected val workStationConfig: WorkStationConfig) {
+abstract class BaseClient<T : Any>(protected val workStationConfig: WorkStationConfig) {
     protected abstract val logger: LoggerWrapper<T>
 
 
     protected suspend fun <T : Any> runRequestRepeatedly(sendRequest: suspend () -> T): T {
         for (i in 0..<workStationConfig.maxRequestRepeat) {
+            delayMessageRequest()
             try {
                 return sendRequest()
             } catch (e: StatusException) {
@@ -18,5 +20,15 @@ abstract class BaseClient <T: Any>(protected val workStationConfig: WorkStationC
             }
         }
         error("Unable to contact remote machine")
+    }
+
+    private fun delayMessageRequest() {
+        try {
+            if (workStationConfig.messageDelay != Duration.ZERO) {
+                Thread.sleep(workStationConfig.messageDelay)
+            }
+        } catch (e: InterruptedException) {
+            logger.error("Exception occurred while delaying message request, $e")
+        }
     }
 }
