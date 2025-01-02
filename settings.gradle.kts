@@ -39,7 +39,7 @@ dependencyResolutionManagement {
             library("logbackCore", "ch.qos.logback:logback-core:$logbackVersion")
             library("logbackClassic", "ch.qos.logback:logback-classic:$logbackVersion")
         }
-        create("httpServer"){
+        create("httpServer") {
             library("server", "io.javalin:javalin:$javalinVersion")
         }
     }

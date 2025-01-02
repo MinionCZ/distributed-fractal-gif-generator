@@ -29,7 +29,7 @@ data class WorkStationConfig(
         set(value) {
             synchronized(this) { field = value }
         }
-    var nodeRunning: Boolean = true
+    var nodeRunning: Boolean = false
         get() = synchronized(this) { field }
         set(value) {
             synchronized(this) { field = value }
