@@ -72,13 +72,19 @@ java -jar dsva-semestral.jar ./example-properties.json
 ## Použití aplikace
 
 Aplikace komunikuje s uživatele v interaktivním módu, kdy aplikace loguje jak do konzole, tak do souboru run.log.
-Distribuovaný výpočet lze spustit pomocí provolání RESTového endpointu /, pokud již neběží a o krocích informuje
+Distribuovaný výpočet lze spustit pomocí provolání RESTového endpointu /new-job, pokud již neběží a o krocích informuje
 uživatele pomocí logů. Je dobré si povšimnout, že v logu se objevují vektorové logické hodiny, které jsou seřazeny podle
 ip adres všech strojů, tedy na všech strojích mají
 stejné pořadí, pokud by byly 2 ip adresy stejné, tak se řadí podle portů. Je dobré si povšimnout, že zelená hodnota
 označuje hodnotu na aktuálním stroji.
 
-Příklad vstupního JSON body pro POST request:
+### Endpointy
+
+#### /new-job
+
+POST endpoint sloužící pro spuštění distribuovaného výpočtu. Vrací 204, pokud vše proběhne v pořádku jinak vrátí 400
+pokud je JSON/data nevalidní. Pokud již běží distribuovaný výpočet, tak vrátí 409.
+Příklad vstupního JSON body pro POST /new-job request:
 
 ```json
 {
@@ -115,7 +121,7 @@ Příklad vstupního JSON body pro POST request:
 }
 ```
 
-### Struktura vstupního JSON souboru
+### Struktura vstupního JSONu
 
 Vstupní JSON soubor je rozdělen do tří částí
 
@@ -145,6 +151,60 @@ Atribut juliaSetProperties udává parametry Mandelbrotovy množiny pro výpoče
 
 Parametry offset a numberOfIterations udávají hodnotu na začátku a na konci výpočtu, pokud se hodnoty liší tak aplikace
 linearně podle počtu snímků použije hodnoty mezi startovní a koncovou hodnotou na výpočet jednotlivých snímků.
+
+#### /join
+
+POST endpoint pro připojení uzlu do topologie. Endpoint bere JSON body ve kterém je seznam uzlů, ke kterým se má
+připojit. Vrací:
+
+- 204 - uzel se úspěšně připojil
+- 400 - JSON má nevalidní údaje nebo špatnou strukturu
+
+Příklad struktury JSON body:
+
+```json
+[
+  {
+    "ip": "127.0.0.1",
+    "port": 14000
+  }
+]
+```
+
+#### /kill
+
+POST endpoint na zabití GRPC serveru a klienta na uzlu. Vrací:
+
+- 204 - pokud byl uzel úspěšně zabit
+- 409 - pokud již je uzel neaktivní
+
+#### /revive
+
+POST endpoint na oživení zabitého uzlu. Vrací:
+
+- 204 - pokud byl uzel úspěšně vzkřísen
+- 409 - pokud uzel již beží
+
+#### /leave
+
+POST endpoint, který přikáže uzlu se odhlásit z topologie a potom se vypnout.
+
+- 204 - pokud se uzel úspěšně odhlásil
+- 409 - pokud je již uzel odhlášený/zabitý
+
+#### /set-delay
+
+POST endpoint, který nastaví delay na síti pro uzel. Vrací:
+
+- 204 - pokud uzel přijal nové nastavení v pořádku
+- 400 - pokud je JSON ve špatném formátu, nebo je delay větší jak maximum (1 min)
+
+Příklad JSON body:
+```json
+{
+  "delay": "PT3S"
+}
+```
 
 ## Popis funkce uzlů
 
