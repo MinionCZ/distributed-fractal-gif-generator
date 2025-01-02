@@ -42,6 +42,7 @@ defaultni nastavení zabalené společně s aplikací v balíku jar.
   "maxCalculationDuration": "PT300S",
   "batchSize": 50,
   "maxRequestRepeat": 5,
+  "httpServerPort": 8080,
   "otherWorkstations": [
     {
       "ip": "127.0.0.1",
@@ -60,6 +61,7 @@ V JSONu vidíme nastavené parametry pro konkrétní pracovní stanici:
 - batchSize: Udává velikost předaných dat dalším uzlům výpočtu ve snímcích
 - maxRequestRepeat: Udává počet opakování volání rozhraní dalšího uzlu
 - otherWorkstations: Seznam stanic účastnících se distribuovaného výpočtu
+- httpServerPort - Port pro manažerský http server
 
 Parametry je možné přepsat pomocí vytvoření JSON souboru a vložení jeho jména/cesty jako argument při spouštění programu
 
@@ -70,13 +72,13 @@ java -jar dsva-semestral.jar ./example-properties.json
 ## Použití aplikace
 
 Aplikace komunikuje s uživatele v interaktivním módu, kdy aplikace loguje jak do konzole, tak do souboru run.log.
-Aplikace si od uživatele vyžadá cestu k JSON souboru obsahujicí parametry výpočtu. Po předání cesty k souboru uživatelem
-aplikace spustí distribuovaný výpočet, pokud již neběží a o krocích informuje uživatele. Je dobré si povšimnout, že v
-logu se objevují vektorové logické hodiny, které jsou seřazeny podle ip adres všech strojů, tedy na všech strojích mají
+Distribuovaný výpočet lze spustit pomocí provolání RESTového endpointu, pokud již neběží a o krocích informuje
+uživatele pomocí logů. Je dobré si povšimnout, že v logu se objevují vektorové logické hodiny, které jsou seřazeny podle
+ip adres všech strojů, tedy na všech strojích mají
 stejné pořadí, pokud by byly 2 ip adresy stejné, tak se řadí podle portů. Je dobré si povšimnout, že zelená hodnota
 označuje hodnotu na aktuálním stroji.
 
-Příklad vstupního JSON souboru:
+Příklad vstupního JSON body pro POST request:
 
 ```json
 {
