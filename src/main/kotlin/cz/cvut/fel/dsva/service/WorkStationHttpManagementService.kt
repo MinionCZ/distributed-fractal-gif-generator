@@ -24,7 +24,7 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
     override fun join(remoteWorkStations: Collection<RemoteWorkStationDto>) {
         workStationConfig.vectorClock.increment()
         logger.info("Joining topology and sending information about joining to workstations $remoteWorkStations")
-        if (GrpcServerWrapper.getInstance().running) {
+        if (workStationConfig.nodeRunning) {
             logger.info("Workstation is already running")
             throw ConflictResponse("Workstation is already running")
         }
@@ -48,7 +48,7 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
         workStationConfig.vectorClock.increment()
         val remoteWorkStations = workStationConfig.getOtherWorkstations()
         logger.info("Leaving topology and sending information about leaving to workstations $remoteWorkStations")
-        if (!GrpcServerWrapper.getInstance().running) {
+        if (!workStationConfig.nodeRunning) {
             logger.info("Workstation is already stopped")
             throw ConflictResponse("Workstation is already stopped")
         }
@@ -72,7 +72,7 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
         try {
             workStationConfig.vectorClock.increment()
             logger.info("Killing work station")
-            if (!GrpcServerWrapper.getInstance().running) {
+            if (!workStationConfig.nodeRunning) {
                 logger.info("Workstation is already stopped")
                 throw ConflictResponse("Workstation is already stopped")
             }
@@ -89,7 +89,7 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
         try {
             workStationConfig.vectorClock.increment()
             logger.info("Reviving work station")
-            if (GrpcServerWrapper.getInstance().running) {
+            if (workStationConfig.nodeRunning) {
                 logger.info("Workstation is already running")
                 throw ConflictResponse("Workstation is already running")
             }

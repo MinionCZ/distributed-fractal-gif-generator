@@ -10,6 +10,10 @@ abstract class BaseClient<T : Any>(protected val workStationConfig: WorkStationC
 
 
     protected suspend fun <T : Any> runRequestRepeatedly(sendRequest: suspend () -> T): T {
+        if (!workStationConfig.nodeRunning) {
+            logger.info("Work station is turned off")
+            error("Work station is turned off")
+        }
         for (i in 0..<workStationConfig.maxRequestRepeat) {
             delayMessageRequest()
             try {

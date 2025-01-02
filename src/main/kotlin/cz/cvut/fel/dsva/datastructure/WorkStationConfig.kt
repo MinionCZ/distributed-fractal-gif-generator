@@ -29,7 +29,11 @@ data class WorkStationConfig(
         set(value) {
             synchronized(this) { field = value }
         }
-
+    var nodeRunning: Boolean = true
+        get() = synchronized(this) { field }
+        set(value) {
+            synchronized(this) { field = value }
+        }
 
     fun getOtherWorkstations(): List<RemoteWorkStation> = synchronized(this) { LinkedList(otherWorkstations) }
 

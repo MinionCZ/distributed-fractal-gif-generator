@@ -69,14 +69,11 @@ class GrpcServerWrapper private constructor(
     private val workStationConfig: WorkStationConfig,
 ) {
     private lateinit var server: Server
-    var running = false
-        get() = synchronized(this) { field }
-        private set
     private val logger = LoggerWrapper(GrpcServerWrapper::class, workStationConfig)
 
     fun start() {
         synchronized(this) {
-            check(!running) { "Already running" }
+            check(!workStationConfig.nodeRunning) { "Already running" }
             logger.info("Starting grpc server")
             this.server = ServerBuilder
                 .forPort(workStationConfig.port)
@@ -86,17 +83,17 @@ class GrpcServerWrapper private constructor(
                 .build()
             this.server.start()
             logger.info("Grpc server started, listening on ip ${workStationConfig.ip} and port ${workStationConfig.port}")
-            running = true
+            workStationConfig.nodeRunning = true
         }
     }
 
     fun stop() {
         synchronized(this) {
-            check(running) { "Already stopped" }
+            check(workStationConfig.nodeRunning) { "Already stopped" }
             logger.info("Shutting down grpc server")
             this.server.shutdownNow().awaitTermination()
             logger.info("Shut down grpc server")
-            running = false
+            workStationConfig.nodeRunning = false
         }
     }
 
