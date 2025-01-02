@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import cz.cvut.fel.dsva.LoggerWrapper
 import cz.cvut.fel.dsva.datastructure.WorkStationConfig
-import cz.cvut.fel.dsva.input.UserInputHandler
 import cz.cvut.fel.dsva.service.UserInputService
 import cz.cvut.fel.dsva.service.WorkStationHttpManagementService
 import io.javalin.Javalin
@@ -23,7 +22,7 @@ class HttpServerApiHandler(
     private val objectMapper: ObjectMapper,
     private val workStationHttpManagementService: WorkStationHttpManagementService
 ) {
-    private val logger = LoggerWrapper(UserInputHandler::class, currentWorkStationConfig)
+    private val logger = LoggerWrapper(HttpServerApiHandler::class, currentWorkStationConfig)
 
     init {
         httpServer.post("/new-job", this::newJob)

@@ -72,7 +72,7 @@ java -jar dsva-semestral.jar ./example-properties.json
 ## Použití aplikace
 
 Aplikace komunikuje s uživatele v interaktivním módu, kdy aplikace loguje jak do konzole, tak do souboru run.log.
-Distribuovaný výpočet lze spustit pomocí provolání RESTového endpointu, pokud již neběží a o krocích informuje
+Distribuovaný výpočet lze spustit pomocí provolání RESTového endpointu /, pokud již neběží a o krocích informuje
 uživatele pomocí logů. Je dobré si povšimnout, že v logu se objevují vektorové logické hodiny, které jsou seřazeny podle
 ip adres všech strojů, tedy na všech strojích mají
 stejné pořadí, pokud by byly 2 ip adresy stejné, tak se řadí podle portů. Je dobré si povšimnout, že zelená hodnota
