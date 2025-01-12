@@ -28,6 +28,7 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
             logger.info("Workstation is already running")
             throw ConflictResponse("Workstation is already running")
         }
+        GrpcServerWrapper.getInstance().start()
         for (station in remoteWorkStations) {
             try {
                 val remoteWorkStation = workStationConfig.addRemoteWorkstation(station.toDao())
@@ -39,7 +40,6 @@ class WorkStationHttpManagementServiceImpl(private val workStationConfig: WorkSt
                 logger.info("Workstation $station already exists")
             }
         }
-        GrpcServerWrapper.getInstance().start()
         workStationConfig.vectorClock.increment()
         logger.info("Successfully joined the workstations $remoteWorkStations and turned on")
     }
