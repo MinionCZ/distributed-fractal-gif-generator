@@ -5,7 +5,7 @@
 Práce se zabývá problémem ukončení distribuovaného výpočtu pomocí Dijkstra-Scholtenova algoritmu pro obecný orientovaný
 graf.
 Práce umožňuje vygenerovat gif fraktálu Mandelbrotovy množiny pomocí iterativního algoritmu a to až v rozlišení 4k.  
-![image](https://gitlab.fel.cvut.cz/stengjir/dsva-semesteralwork/-/wikis/uploads/b46df7d93d347a9b40ddad5043df9259/output-git2.gif)
+![output-git2](https://github.com/user-attachments/assets/7e21ca1a-670c-4083-a2b5-01527f5f4a18)
 
 ## Technologie
 
